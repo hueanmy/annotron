@@ -1,0 +1,32 @@
+---
+description: Open agent-generated HTML artifacts in a local browser editor so the user can
+  annotate elements/text and send feedback; receive that feedback, apply it, and iterate
+  until the user finalizes. Use whenever the user wants to review or refine an HTML artifact.
+---
+
+When the user wants to review or refine an HTML artifact you produced:
+
+1. **Open it**: run `annotron <path-to-artifact.html>`.
+   This starts the background server (if not running), registers the file, and opens the
+   review editor in the user's browser. Print the editor URL for the user.
+
+2. **Wait for feedback**: run `annotron poll <path>`.
+   This blocks until the user sends feedback. Output is JSON with:
+   - `items[]` — each has `kind` (element | text), `selector`, `text`, `note`
+   - `message` — freeform message from the user
+   - `finalized: true` — signals the user is done; skip to step 5
+
+3. **Apply the feedback**: edit the HTML file using the selector/text + note from each item.
+
+4. **Tell the user what changed**: run `annotron poll <path> --reply "..."`.
+   This posts an agent message that appears in the browser conversation log, then re-arms
+   the poll. Saving the file triggers an automatic live-reload in the browser.
+
+5. **Repeat steps 2–4** until the poll returns `"finalized": true`.
+   At that point the user has written the confirmed result into the file — the loop is done.
+
+## Tips
+
+- The `bin/` directory containing `annotron` is on your PATH while this plugin is active.
+- Keep replies short and action-focused ("Updated h1 colour, fixed revenue figure, added footer.").
+- Never edit the file while a poll is in flight — wait for the feedback JSON first.
