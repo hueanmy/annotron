@@ -6,12 +6,27 @@ description: Open agent-generated HTML artifacts in a local browser editor so th
 
 When the user wants to review or refine an HTML artifact you produced:
 
-1. Open it: run `annotron <path-to-artifact.html>`. This opens the editor in their browser.
-2. Wait for feedback: run `annotron poll <path>`. It blocks and returns JSON describing the
-   user's feedback — each item has a `kind` (element | text | message), a `selector`, the
-   selected `text`, and the user's `note`.
-3. Apply each item to the HTML file using its selector / text + note.
-4. Tell the user what you changed: `annotron poll <path> --reply "..."` (also re-arms the poll).
-   Saving the file makes the editor live-reload automatically.
-5. Repeat 2–4 until the poll returns `"finalized": true` — the user has written the
-   confirmed result into the file and is done.
+1. **Open it**: run `annotron <path-to-artifact.html>`.
+   This starts the background server (if not running), registers the file, and opens the
+   review editor in the user's browser. Print the editor URL for the user.
+
+2. **Wait for feedback**: run `annotron poll <path>`.
+   This blocks until the user sends feedback. Output is JSON with:
+   - `items[]` — each has `kind` (element | text), `selector`, `text`, `note`
+   - `message` — freeform message from the user
+   - `finalized: true` — signals the user is done; skip to step 5
+
+3. **Apply the feedback**: edit the HTML file using the selector/text + note from each item.
+
+4. **Tell the user what changed**: run `annotron poll <path> --reply "..."`.
+   This posts an agent message that appears in the browser conversation log, then re-arms
+   the poll. Saving the file triggers an automatic live-reload in the browser.
+
+5. **Repeat steps 2–4** until the poll returns `"finalized": true`.
+   At that point the user has written the confirmed result into the file — the loop is done.
+
+## Tips
+
+- The `bin/` directory containing `annotron` is on your PATH while this plugin is active.
+- Keep replies short and action-focused ("Updated h1 colour, fixed revenue figure, added footer.").
+- Never edit the file while a poll is in flight — wait for the feedback JSON first.
