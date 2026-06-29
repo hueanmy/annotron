@@ -125,9 +125,8 @@ async function handler(req, res) {
   }
 
   if (pathname === '/' && method === 'GET') {
-    const file = u.searchParams.get('file') || '';
-    const html = CHROME_HTML; // file param handled client-side
-    res.writeHead(200, { 'Content-Type': 'text/html' });
+    const html = fs.readFileSync(CHROME_PATH, 'utf8');
+    res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
     res.end(html);
     return;
   }
@@ -160,6 +159,7 @@ async function handler(req, res) {
     const sess = getSession(abs);
     sess.pendingFeedback = body;
     sess.finalized = false;
+    broadcastSSE(abs, 'agent-thinking', '{}');
     wakePoll(abs, { feedback: body, finalized: false });
     return send(res, 200, { ok: true });
   }

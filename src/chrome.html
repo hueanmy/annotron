@@ -219,6 +219,20 @@
   .hint { font-size: 10px; color: var(--text-dim); display: flex; align-items: center; gap: 3px; }
   .hint kbd { font-size: 10px; padding: 1px 5px; }
 
+  /* ── Thinking indicator ── */
+  .thinking-dots { display: flex; gap: 5px; align-items: center; padding: 2px 0; }
+  .thinking-dots span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--agent-msg-label);
+    animation: thinking-bounce 1.2s ease-in-out infinite;
+  }
+  .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes thinking-bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.35; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
   @media (prefers-reduced-motion: reduce) { *, .card { transition: none !important; animation: none !important; } }
   @media (max-width: 600px) {
     #sidebar { width: 100%; position: fixed; bottom: 0; left: 0; right: 0; height: 50vh; border-left: none; border-top: 1px solid var(--border); }
@@ -247,13 +261,13 @@
     <div id="conversation"></div>
     <div id="pending-cards"></div>
     <div id="composer">
-      <textarea id="free-text" placeholder="Message to agent (optional)…" rows="3"></textarea>
-      <button id="btn-send" title="Send feedback (Ctrl+Enter)">Send feedback</button>
+      <textarea id="free-text" placeholder="Message to agent… (Enter to send, Shift+Enter for newline)" rows="3"></textarea>
+      <button id="btn-send" title="Send feedback (Enter)">Send feedback</button>
     </div>
     <div id="shortcut-hints">
       <span class="hint"><kbd>A</kbd> Annotate</span>
       <span class="hint"><kbd>Ctrl</kbd><kbd>Z</kbd> Undo</span>
-      <span class="hint"><kbd>Ctrl</kbd><kbd>↵</kbd> Send</span>
+      <span class="hint"><kbd>↵</kbd> Send</span>
       <span class="hint"><kbd>Esc</kbd> Off</span>
       <span class="hint"><kbd>?</kbd> Help</span>
     </div>
@@ -273,7 +287,7 @@
     <div class="kbd-row"><span class="kbd-desc">Toggle annotate mode</span><span class="kbd-keys"><kbd>A</kbd></span></div>
     <div class="kbd-row"><span class="kbd-desc">Exit annotate mode</span><span class="kbd-keys"><kbd>Esc</kbd></span></div>
     <div class="kbd-row"><span class="kbd-desc">Undo last card removal</span><span class="kbd-keys"><kbd>Ctrl</kbd><kbd>Z</kbd></span></div>
-    <div class="kbd-row"><span class="kbd-desc">Send feedback</span><span class="kbd-keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></span></div>
+    <div class="kbd-row"><span class="kbd-desc">Send feedback</span><span class="kbd-keys"><kbd>Enter</kbd></span></div>
     <div class="kbd-row"><span class="kbd-desc">Download clean HTML</span><span class="kbd-keys"><kbd>D</kbd></span></div>
     <div class="kbd-row"><span class="kbd-desc">Toggle dark / light mode</span><span class="kbd-keys"><kbd>T</kbd></span></div>
     <div class="kbd-row"><span class="kbd-desc">Show this help</span><span class="kbd-keys"><kbd>?</kbd></span></div>
@@ -389,9 +403,8 @@ function setAnnotate(val) {
   annotating = val;
   btnAnnotate.classList.toggle('active', annotating);
   btnAnnotate.setAttribute('aria-pressed', String(annotating));
-  if (sdkReady) {
-    frame.contentWindow.postMessage({ [TAG]: true, type: 'set-annotate', value: annotating }, '*');
-  }
+  // Always send — don't gate on sdkReady, SDK will handle messages whenever it's ready
+  frame.contentWindow?.postMessage({ [TAG]: true, type: 'set-annotate', value: annotating }, '*');
 }
 btnAnnotate.addEventListener('click', () => setAnnotate(!annotating));
 
@@ -501,6 +514,12 @@ async function sendFeedback() {
   }
 }
 btnSend.addEventListener('click', sendFeedback);
+freeText.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    sendFeedback();
+  }
+});
 
 // ── Download ───────────────────────────────────────────────────────────────
 async function doDownload() {
@@ -565,13 +584,33 @@ function connectSSE() {
     savedScroll = frame.contentWindow?.scrollY || 0;
     loadArtifact();
   });
+  function showThinking() {
+    if (convoEl.querySelector('[data-thinking]')) return;
+    const el = document.createElement('div');
+    el.className = 'msg agent';
+    el.setAttribute('data-thinking', '1');
+    const lbl = document.createElement('div');
+    lbl.className = 'msg-label';
+    lbl.textContent = 'Agent';
+    const dots = document.createElement('div');
+    dots.className = 'thinking-dots';
+    dots.innerHTML = '<span></span><span></span><span></span>';
+    el.append(lbl, dots);
+    convoEl.appendChild(el);
+    convoEl.scrollTop = convoEl.scrollHeight;
+  }
+  function hideThinking() {
+    convoEl.querySelectorAll('[data-thinking]').forEach(el => el.remove());
+  }
+  es.addEventListener('agent-thinking', showThinking);
   es.addEventListener('agent-reply', (e) => {
+    hideThinking();
     try {
       const d = JSON.parse(e.data);
       addConvoMsg('agent', d.message || e.data);
     } catch { addConvoMsg('agent', e.data); }
   });
-  es.onopen = () => { statusDot.classList.add('live'); statusDot.title = 'Live'; };
+  es.onopen = () => { statusDot.classList.add('live'); statusDot.title = 'Live'; hideThinking(); };
   es.onerror = () => {
     statusDot.classList.remove('live');
     statusDot.title = 'Disconnected — reconnecting…';

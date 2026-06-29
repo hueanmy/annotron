@@ -5,8 +5,10 @@
 (function () {
   const TAG = 'annotron-sdk';
   let annotating = false;
+  console.log('[annotron-sdk] loaded');
   let hovered = null;
-  let shadow = null;
+  let cardEl = null;
+  let overlayEl = null;
   let ignoreNextClick = false;
 
   // ── CSS path ───────────────────────────────────────────────────────────────
@@ -18,8 +20,7 @@
       const tag = node.tagName.toLowerCase();
       const siblings = Array.from(node.parentElement?.children || []).filter(c => c.tagName === node.tagName);
       if (siblings.length > 1) {
-        const idx = siblings.indexOf(node) + 1;
-        parts.unshift(`${tag}:nth-of-type(${idx})`);
+        parts.unshift(`${tag}:nth-of-type(${siblings.indexOf(node) + 1})`);
       } else {
         parts.unshift(tag);
       }
@@ -44,142 +45,127 @@
     ));
   }
 
-  // ── Shadow DOM ─────────────────────────────────────────────────────────────
-  function ensureShadow() {
-    if (shadow) return shadow;
-    const host = document.createElement('div');
-    host.setAttribute('data-annotron-ui', '1');
-    document.documentElement.appendChild(host);
-    shadow = host.attachShadow({ mode: 'open' });
-    const style = document.createElement('style');
-    style.textContent = `
-      :host { all: initial; position: fixed; z-index: 2147483647; left: 0; top: 0; }
-      .hl {
-        position: fixed; pointer-events: none;
-        background: rgba(79,142,247,.22);
-        border-radius: 2px;
-        box-shadow: 0 0 0 1.5px rgba(79,142,247,.55);
-      }
-      .el-hl {
-        position: fixed; pointer-events: none;
-        outline: 2px solid #4f8ef7;
-        outline-offset: 2px;
-        border-radius: 2px;
-      }
-      .card {
-        position: fixed;
-        width: min(300px, calc(100vw - 24px));
-        padding: 12px;
-        border-radius: 10px;
-        background: #25262b;
-        color: #c9cdd4;
-        border: 1px solid #4f8ef7;
-        box-shadow: 0 16px 56px rgba(0,0,0,.45);
-        font: 13px/1.4 system-ui, -apple-system, sans-serif;
-      }
-      .card-heading {
-        font-size: 11px; font-weight: 700; color: #6c7280;
-        text-transform: uppercase; letter-spacing: .5px;
-        margin-bottom: 6px;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      }
-      .card textarea {
-        width: 100%; min-height: 68px; resize: vertical;
-        border-radius: 6px; border: 1px solid #373a40;
-        background: #1e1f23; color: #c9cdd4;
-        padding: 7px 8px; font: inherit; font-size: 13px;
-        font-family: system-ui, -apple-system, sans-serif;
-      }
-      .card textarea:focus { outline: none; border-color: #4f8ef7; }
-      .card textarea::placeholder { color: #4a4e5a; }
-      .card .hint { margin-top: 5px; font-size: 11px; color: #4a4e5a; }
-      .card .row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
-      .card button {
-        border: 0; border-radius: 6px; padding: 6px 12px;
-        font: 600 12px system-ui, -apple-system, sans-serif; cursor: pointer;
-      }
-      .btn-cancel { background: #373a40; color: #c9cdd4; }
-      .btn-cancel:hover { background: #444750; }
-      .btn-add { background: #4f8ef7; color: #fff; }
-      .btn-add:hover { background: #3a7ae0; }
-    `;
-    shadow.appendChild(style);
-    return shadow;
+  function isAnnotronEl(el) {
+    return !!(el && el.closest && el.closest('[data-annotron-ui]'));
+  }
+
+  // ── Overlay root (highlight layer) ────────────────────────────────────────
+  function ensureOverlay() {
+    if (overlayEl) return overlayEl;
+    overlayEl = document.createElement('div');
+    overlayEl.setAttribute('data-annotron-ui', 'overlay');
+    overlayEl.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483645;';
+    document.documentElement.appendChild(overlayEl);
+    return overlayEl;
   }
 
   function clearHighlights() {
-    if (!shadow) return;
-    shadow.querySelectorAll('.hl,.el-hl').forEach(el => el.remove());
-  }
-
-  function clearCard() {
-    if (!shadow) return;
-    shadow.querySelectorAll('.card').forEach(el => el.remove());
-    clearHighlights();
+    if (overlayEl) overlayEl.innerHTML = '';
   }
 
   function highlightTextRange(range) {
-    const root = ensureShadow();
+    const overlay = ensureOverlay();
     clearHighlights();
     for (const rect of range.getClientRects()) {
       if (rect.width <= 0 || rect.height <= 0) continue;
-      const mark = document.createElement('div');
-      mark.className = 'hl';
-      mark.style.cssText = `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px`;
-      root.appendChild(mark);
+      const m = document.createElement('div');
+      m.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:rgba(79,142,247,.25);border-radius:2px;box-shadow:0 0 0 1.5px rgba(79,142,247,.55);pointer-events:none;`;
+      overlay.appendChild(m);
     }
   }
 
   function highlightElement(el) {
-    const root = ensureShadow();
+    const overlay = ensureOverlay();
     clearHighlights();
-    const rect = el.getBoundingClientRect();
-    const mark = document.createElement('div');
-    mark.className = 'el-hl';
-    mark.style.cssText = `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px`;
-    root.appendChild(mark);
+    const r = el.getBoundingClientRect();
+    const m = document.createElement('div');
+    m.style.cssText = `position:absolute;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;outline:2px solid #4f8ef7;outline-offset:2px;pointer-events:none;`;
+    overlay.appendChild(m);
   }
 
-  function positionCard(card, anchorRect) {
+  // ── Card ──────────────────────────────────────────────────────────────────
+  const CARD_STYLE = [
+    'position:fixed',
+    'z-index:2147483646',
+    'width:min(300px,calc(100vw - 24px))',
+    'padding:14px',
+    'border-radius:10px',
+    'background:#25262b',
+    'color:#c9cdd4',
+    'border:1px solid #4f8ef7',
+    'box-shadow:0 16px 56px rgba(0,0,0,.5)',
+    'font:13px/1.4 system-ui,-apple-system,sans-serif',
+    'display:flex',
+    'flex-direction:column',
+    'gap:8px',
+  ].join(';');
+
+  function clearCard() {
+    if (cardEl) { cardEl.remove(); cardEl = null; }
+  }
+
+  function dismissCard() {
+    clearCard();
+    clearHighlights();
+    if (hovered) {
+      hovered.style.outline = '';
+      hovered.style.outlineOffset = '';
+      hovered.style.cursor = '';
+      hovered = null;
+    }
+  }
+
+  function positionCard(anchorRect) {
     const vw = window.innerWidth, vh = window.innerHeight;
-    const w = Math.min(300, vw - 24);
-    let left = Math.max(12, Math.min(anchorRect.left, vw - w - 12));
+    let left = Math.max(12, Math.min(anchorRect.left, vw - 316));
     let top = anchorRect.bottom + 10;
-    if (top + 180 > vh) top = Math.max(12, anchorRect.top - 190);
-    card.style.left = left + 'px';
-    card.style.top = top + 'px';
+    if (top + 200 > vh) top = Math.max(12, anchorRect.top - 210);
+    cardEl.style.left = left + 'px';
+    cardEl.style.top = top + 'px';
+  }
+
+  function el(tag, styles, text) {
+    const e = document.createElement(tag);
+    if (styles) e.style.cssText = styles;
+    if (text !== undefined) e.textContent = text;
+    return e;
   }
 
   function showCard({ heading, placeholder, anchorRect, onAdd }) {
-    const root = ensureShadow();
     clearCard();
 
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="card-heading">${heading}</div>
-      <textarea placeholder="${placeholder}"></textarea>
-      <div class="hint">Enter — add &middot; Esc — cancel</div>
-      <div class="row">
-        <button class="btn-cancel" type="button">Cancel</button>
-        <button class="btn-add" type="button">Add annotation</button>
-      </div>`;
-    root.appendChild(card);
-    positionCard(card, anchorRect);
+    cardEl = document.createElement('div');
+    cardEl.setAttribute('data-annotron-ui', 'card');
+    cardEl.style.cssText = CARD_STYLE;
 
-    const ta = card.querySelector('textarea');
-    const btnCancel = card.querySelector('.btn-cancel');
-    const btnAdd = card.querySelector('.btn-add');
+    const hdg = el('div',
+      'font-size:11px;font-weight:700;color:#6c7280;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;',
+      heading);
 
-    const submit = () => {
-      onAdd(ta.value.trim());
-      clearCard();
-    };
+    const ta = document.createElement('textarea');
+    ta.placeholder = placeholder;
+    ta.style.cssText = 'width:100%;min-height:68px;resize:vertical;border-radius:6px;border:1px solid #373a40;background:#1e1f23;color:#c9cdd4;padding:7px 8px;font:13px/1.4 system-ui,-apple-system,sans-serif;box-sizing:border-box;outline:none;';
+    ta.addEventListener('focus', () => { ta.style.borderColor = '#4f8ef7'; });
+    ta.addEventListener('blur', () => { ta.style.borderColor = '#373a40'; });
 
-    btnCancel.addEventListener('click', () => clearCard());
-    btnAdd.addEventListener('click', submit);
+    const hint = el('div', 'font-size:11px;color:#4a4e5a;', 'Enter — add · Esc — cancel');
+
+    const row = el('div', 'display:flex;gap:6px;justify-content:flex-end;');
+
+    const btnCancel = el('button', 'border:0;border-radius:6px;padding:6px 12px;font:600 12px system-ui;cursor:pointer;background:#373a40;color:#c9cdd4;', 'Cancel');
+    const btnAdd = el('button', 'border:0;border-radius:6px;padding:6px 12px;font:600 12px system-ui;cursor:pointer;background:#4f8ef7;color:#fff;', 'Add annotation');
+
+    row.append(btnCancel, btnAdd);
+    cardEl.append(hdg, ta, hint, row);
+    document.documentElement.appendChild(cardEl);
+    positionCard(anchorRect);
+
+    const submit = () => { onAdd(ta.value.trim()); dismissCard(); };
+
+    btnCancel.addEventListener('click', e => { e.stopPropagation(); dismissCard(); });
+    btnAdd.addEventListener('click', e => { e.stopPropagation(); submit(); });
     ta.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { e.stopPropagation(); clearCard(); }
+      if (e.key === 'Escape') { e.stopPropagation(); dismissCard(); }
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
     });
     setTimeout(() => ta.focus(), 0);
@@ -187,8 +173,8 @@
 
   // ── Hover ──────────────────────────────────────────────────────────────────
   document.addEventListener('mouseover', e => {
-    if (!annotating || isInteractive(e.target) || e.target.closest('[data-annotron-ui]')) return;
-    if (hovered) { hovered.style.outline = ''; hovered.style.outlineOffset = ''; }
+    if (!annotating || isInteractive(e.target) || isAnnotronEl(e.target)) return;
+    if (hovered) { hovered.style.outline = ''; hovered.style.outlineOffset = ''; hovered.style.cursor = ''; }
     hovered = e.target;
     hovered.style.outline = '2px solid #4f8ef7';
     hovered.style.outlineOffset = '2px';
@@ -196,19 +182,20 @@
   }, true);
 
   document.addEventListener('mouseout', e => {
-    if (!annotating) return;
-    if (hovered && e.target === hovered) {
-      hovered.style.outline = '';
-      hovered.style.outlineOffset = '';
-      hovered.style.cursor = '';
-      hovered = null;
-    }
+    if (!annotating || !hovered || e.target !== hovered) return;
+    hovered.style.outline = '';
+    hovered.style.outlineOffset = '';
+    hovered.style.cursor = '';
+    hovered = null;
   }, true);
 
-  // ── Text selection → inline card ───────────────────────────────────────────
+  // ── Text selection ─────────────────────────────────────────────────────────
   document.addEventListener('mouseup', e => {
-    if (!annotating || isInteractive(e.target) || e.target.closest('[data-annotron-ui]')) return;
+    console.log('[annotron-sdk] mouseup', 'annotating:', annotating, 'target:', e.target?.tagName);
+    if (!annotating || isAnnotronEl(e.target)) return;
+
     const sel = window.getSelection();
+    console.log('[annotron-sdk] selection:', sel?.toString()?.slice(0, 30));
     if (!sel || sel.isCollapsed) return;
     const text = sel.toString().trim();
     if (!text) return;
@@ -223,51 +210,55 @@
     const label = `"${text.slice(0, 60)}"`;
 
     ignoreNextClick = true;
+    dismissCard();
     highlightTextRange(clonedRange);
     sel.removeAllRanges();
 
     showCard({
-      heading: `Text: ${text.slice(0, 50)}${text.length > 50 ? '…' : ''}`,
+      heading: 'Text: ' + text.slice(0, 50) + (text.length > 50 ? '…' : ''),
       placeholder: 'What should change about this text?',
       anchorRect,
-      onAdd: (note) => {
+      onAdd: note => {
         window.parent.postMessage({ [TAG]: true, type: 'text-selected', selector, text, label, note }, '*');
       },
     });
   }, true);
 
-  // ── Element click → inline card ────────────────────────────────────────────
+  // ── Element click ──────────────────────────────────────────────────────────
   document.addEventListener('click', e => {
-    if (!annotating || isInteractive(e.target) || e.target.closest('[data-annotron-ui]')) return;
+    console.log('[annotron-sdk] click', 'annotating:', annotating, 'target:', e.target?.tagName);
+    if (!annotating || isAnnotronEl(e.target)) return;
+    if (isInteractive(e.target)) return;
     e.preventDefault();
     e.stopPropagation();
 
     if (ignoreNextClick) { ignoreNextClick = false; return; }
 
     const el = e.target;
-    if (hovered === el) { hovered.style.outline = ''; hovered.style.outlineOffset = ''; hovered.style.cursor = ''; hovered = null; }
-
     const selector = cssPath(el);
     const label = labelFor(el);
     const anchorRect = el.getBoundingClientRect();
 
+    console.log('[annotron-sdk] showing card at', anchorRect.left, anchorRect.bottom);
+    dismissCard();
     highlightElement(el);
     showCard({
-      heading: `Element: ${label}`,
+      heading: 'Element: ' + label,
       placeholder: 'What should change about this element?',
       anchorRect,
-      onAdd: (note) => {
+      onAdd: note => {
         window.parent.postMessage({ [TAG]: true, type: 'element-selected', selector, label, note }, '*');
-        clearHighlights();
+        dismissCard();
       },
     });
   }, true);
 
   // ── Serialize ──────────────────────────────────────────────────────────────
   function serialize() {
+    dismissCard();
     const clone = document.documentElement.cloneNode(true);
     clone.querySelectorAll('script[data-annotron]').forEach(s => s.remove());
-    clone.querySelector('[data-annotron-ui]')?.remove();
+    clone.querySelectorAll('[data-annotron-ui]').forEach(s => s.remove());
     clone.querySelectorAll('[style]').forEach(el => {
       el.style.outline = '';
       el.style.outlineOffset = '';
@@ -283,7 +274,8 @@
     if (!d || !d[TAG]) return;
     if (d.type === 'set-annotate') {
       annotating = d.value;
-      if (!annotating) { clearCard(); if (hovered) { hovered.style.outline = ''; hovered = null; } }
+      console.log('[annotron-sdk] set-annotate', annotating);
+      if (!annotating) dismissCard();
     }
     if (d.type === 'serialize') {
       e.source.postMessage({ [TAG]: true, type: 'serialized', html: serialize(), reqId: d.reqId }, '*');

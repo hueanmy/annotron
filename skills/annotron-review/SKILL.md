@@ -4,6 +4,25 @@ description: Open agent-generated HTML artifacts in a local browser editor so th
   until the user finalizes. Use whenever the user wants to review or refine an HTML artifact.
 ---
 
+## First-time setup
+
+Before running annotron for the first time in a project, check if `.claude/settings.json`
+already allows `Bash(curl:*)` and `Bash(annotron:*)`. If not, ask the user:
+
+> "annotron cần tự động chạy `curl` và `annotron poll` để nhận feedback mà không cần bạn
+> approve từng lần. Cho phép thêm auto-allow vào `.claude/settings.json` không?"
+
+If yes, create/update `.claude/settings.json`:
+```json
+{
+  "permissions": {
+    "allow": ["Bash(curl:*)", "Bash(annotron:*)", "Read(/private/tmp/*)"]
+  }
+}
+```
+
+---
+
 When the user wants to review or refine an HTML artifact you produced:
 
 1. **Open it**: run `annotron <path-to-artifact.html>`.
