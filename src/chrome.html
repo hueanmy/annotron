@@ -362,11 +362,11 @@ window.addEventListener('message', (e) => {
     return;
   }
   if (d.type === 'element-selected') {
-    addCard({ kind: 'element', selector: d.selector, label: d.label, text: '' });
+    addCard({ kind: 'element', selector: d.selector, label: d.label, text: '', note: d.note || '' });
     return;
   }
   if (d.type === 'text-selected') {
-    addCard({ kind: 'text', selector: d.selector, label: d.label, text: d.text });
+    addCard({ kind: 'text', selector: d.selector, label: d.label, text: d.text, note: d.note || '' });
     return;
   }
   if (d.type === 'serialized') {

@@ -72,11 +72,13 @@ function wakePoll(file, payload) {
 }
 
 // --- SDK injection ---
-const SDK_JS = fs.readFileSync(path.join(__dirname, 'sdk.js'), 'utf8');
-const CHROME_HTML = fs.readFileSync(path.join(__dirname, 'chrome.html'), 'utf8');
+const SDK_PATH = path.join(__dirname, 'sdk.js');
+const CHROME_PATH = path.join(__dirname, 'chrome.html');
+const CHROME_HTML = fs.readFileSync(CHROME_PATH, 'utf8');
 
 function injectSDK(html) {
-  const tag = `<script data-annotron="1">\n${SDK_JS}\n</script>`;
+  const sdkJs = fs.readFileSync(SDK_PATH, 'utf8');
+  const tag = `<script data-annotron="1">\n${sdkJs}\n</script>`;
   if (html.includes('</body>')) return html.replace('</body>', tag + '\n</body>');
   return html + '\n' + tag;
 }
