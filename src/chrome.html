@@ -1,105 +1,225 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>annotron</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Theme tokens ── */
   :root {
     --bar-h: 52px;
+    --radius: 6px;
+    --accent: #4f8ef7;
+    --accent-hover: #3a7ae0;
+    --danger: #e74c3c;
+    --danger-hover: #c0392b;
+    --green: #2ecc71;
+  }
+  [data-theme="dark"] {
     --bg: #1a1b1e;
     --bar-bg: #25262b;
     --border: #373a40;
     --text: #c9cdd4;
     --text-dim: #6c7280;
-    --accent: #4f8ef7;
-    --accent-hover: #3a7ae0;
-    --danger: #e74c3c;
-    --green: #2ecc71;
     --card-bg: #2c2d32;
     --input-bg: #1e1f23;
-    --radius: 6px;
+    --btn-neutral: #373a40;
+    --btn-neutral-hover: #444750;
+    --agent-msg-bg: #1e3a5f;
+    --agent-msg-label: #7ab3f5;
+    --iframe-bg: #fff;
+    --kbd-bg: #373a40;
+    --overlay-bg: rgba(0,0,0,0.6);
   }
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; font-size: 14px; }
+  [data-theme="light"] {
+    --bg: #f4f5f7;
+    --bar-bg: #ffffff;
+    --border: #dde1e7;
+    --text: #1a1b1e;
+    --text-dim: #7c8493;
+    --card-bg: #ffffff;
+    --input-bg: #f4f5f7;
+    --btn-neutral: #e4e6ea;
+    --btn-neutral-hover: #d0d3d9;
+    --agent-msg-bg: #dbeafe;
+    --agent-msg-label: #2563eb;
+    --iframe-bg: #fff;
+    --kbd-bg: #e4e6ea;
+    --overlay-bg: rgba(0,0,0,0.35);
+  }
 
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* ── Topbar ── */
   #topbar {
     position: fixed; top: 0; left: 0; right: 0; height: var(--bar-h);
     background: var(--bar-bg); border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px; padding: 0 14px; z-index: 100;
+    display: flex; align-items: center; gap: 8px; padding: 0 14px; z-index: 100;
+    transition: background 0.2s, border-color 0.2s;
   }
   #topbar .logo { font-weight: 700; font-size: 15px; letter-spacing: 0.5px; color: var(--accent); flex-shrink: 0; }
-  #file-label { font-family: monospace; font-size: 12px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; direction: rtl; text-align: left; }
-  #status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; transition: background 0.3s; }
+  #file-label {
+    font-family: monospace; font-size: 12px; color: var(--text-dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0; flex: 1; direction: rtl; text-align: left;
+  }
+  #status-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--text-dim); flex-shrink: 0;
+    transition: background 0.3s;
+  }
   #status-dot.live { background: var(--green); }
-  .spacer { flex: 1; }
 
+  /* ── Buttons ── */
   button {
     border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px;
-    padding: 6px 14px; font-weight: 500; transition: background 0.15s, opacity 0.15s;
+    padding: 6px 12px; font-weight: 500;
+    transition: background 0.15s, opacity 0.15s, color 0.15s;
   }
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   button:disabled { opacity: 0.4; cursor: default; }
-  #btn-annotate { background: var(--border); color: var(--text); }
+
+  .btn-neutral { background: var(--btn-neutral); color: var(--text); }
+  .btn-neutral:hover:not(:disabled) { background: var(--btn-neutral-hover); }
+
+  #btn-annotate { background: var(--btn-neutral); color: var(--text); }
   #btn-annotate.active { background: var(--accent); color: #fff; }
-  #btn-download { background: var(--border); color: var(--text); }
-  #btn-finalize { background: var(--danger); color: #fff; }
-  #btn-download:hover:not(:disabled), #btn-annotate:hover:not(:disabled):not(.active) { background: #444750; }
-  #btn-finalize:hover:not(:disabled) { background: #c0392b; }
+  #btn-annotate:hover:not(:disabled):not(.active) { background: var(--btn-neutral-hover); }
   #btn-annotate.active:hover { background: var(--accent-hover); }
 
-  #main { display: flex; height: calc(100vh - var(--bar-h)); margin-top: var(--bar-h); }
+  #btn-finalize { background: var(--danger); color: #fff; }
+  #btn-finalize:hover:not(:disabled) { background: var(--danger-hover); }
 
-  #iframe-wrap { flex: 1; min-width: 0; position: relative; background: #fff; }
+  /* Theme toggle */
+  #btn-theme {
+    background: var(--btn-neutral); color: var(--text);
+    padding: 6px 10px; font-size: 15px; line-height: 1;
+  }
+  #btn-theme:hover { background: var(--btn-neutral-hover); }
+
+  /* Shortcut help */
+  #btn-help {
+    background: none; color: var(--text-dim); font-size: 15px;
+    padding: 4px 8px; border-radius: 50%;
+  }
+  #btn-help:hover { background: var(--btn-neutral); color: var(--text); }
+
+  /* ── Undo toast ── */
+  #undo-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(12px);
+    background: var(--card-bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px 16px; font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+  #undo-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  #undo-toast button { background: var(--accent); color: #fff; padding: 4px 10px; font-size: 12px; }
+  #undo-toast button:hover { background: var(--accent-hover); }
+
+  /* ── Keyboard shortcut overlay ── */
+  #kbd-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: var(--overlay-bg); align-items: center; justify-content: center;
+  }
+  #kbd-overlay.open { display: flex; }
+  #kbd-panel {
+    background: var(--bar-bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px 28px; min-width: 300px; max-width: 90vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  #kbd-panel h2 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+  .kbd-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); gap: 16px; }
+  .kbd-row:last-child { border-bottom: none; }
+  .kbd-desc { color: var(--text); font-size: 13px; }
+  .kbd-keys { display: flex; gap: 4px; flex-shrink: 0; }
+  kbd {
+    background: var(--kbd-bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 7px; font-size: 12px; font-family: monospace;
+    white-space: nowrap;
+  }
+  #kbd-close { margin-top: 16px; width: 100%; background: var(--btn-neutral); color: var(--text); padding: 8px; }
+  #kbd-close:hover { background: var(--btn-neutral-hover); }
+
+  /* ── Layout ── */
+  #main { display: flex; height: calc(100vh - var(--bar-h)); margin-top: var(--bar-h); }
+  #iframe-wrap { flex: 1; min-width: 0; position: relative; background: var(--iframe-bg); }
   iframe { width: 100%; height: 100%; border: none; display: block; }
 
   #sidebar {
     width: 340px; flex-shrink: 0; border-left: 1px solid var(--border);
     display: flex; flex-direction: column; background: var(--bg); overflow: hidden;
+    transition: background 0.2s, border-color 0.2s;
   }
 
+  /* ── Conversation ── */
   #conversation {
-    flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    flex: 1; overflow-y: auto; padding: 12px;
+    display: flex; flex-direction: column; gap: 8px;
   }
-
   .msg { border-radius: var(--radius); padding: 10px 12px; font-size: 13px; line-height: 1.5; }
   .msg.human { background: var(--card-bg); align-self: flex-end; max-width: 100%; }
-  .msg.agent { background: #1e3a5f; align-self: flex-start; max-width: 100%; }
+  .msg.agent { background: var(--agent-msg-bg); align-self: flex-start; max-width: 100%; }
   .msg .msg-label { font-size: 11px; font-weight: 600; color: var(--text-dim); margin-bottom: 4px; }
   .msg.human .msg-label { color: var(--accent); }
-  .msg.agent .msg-label { color: #7ab3f5; }
+  .msg.agent .msg-label { color: var(--agent-msg-label); }
 
+  /* ── Pending cards ── */
   #pending-cards { display: flex; flex-direction: column; gap: 6px; padding: 0 10px 6px; }
   .card {
     background: var(--card-bg); border-radius: var(--radius); padding: 10px;
     border-left: 3px solid var(--accent); font-size: 12px;
+    transition: background 0.2s;
+    animation: card-in 0.15s ease;
   }
+  @keyframes card-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
   .card .card-kind { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
   .card .card-label { color: var(--text); margin: 2px 0 6px; word-break: break-all; }
   .card textarea {
-    width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text); font-size: 12px; padding: 5px 7px; resize: vertical; min-height: 50px;
-    font-family: inherit;
+    width: 100%; background: var(--input-bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-size: 12px; padding: 5px 7px;
+    resize: vertical; min-height: 50px; font-family: inherit;
+    transition: background 0.2s, border-color 0.2s;
   }
   .card textarea:focus { outline: none; border-color: var(--accent); }
-  .card-remove { float: right; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; padding: 0 4px; line-height: 1; }
+  .card-remove {
+    float: right; background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 16px; padding: 0 2px; line-height: 1;
+  }
   .card-remove:hover { color: var(--danger); }
 
-  #composer {
-    border-top: 1px solid var(--border); padding: 10px;
-    display: flex; flex-direction: column; gap: 6px;
-  }
+  /* ── Composer ── */
+  #composer { border-top: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; gap: 6px; }
   #composer textarea {
-    width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: var(--radius);
-    color: var(--text); font-size: 13px; padding: 8px 10px; resize: vertical; min-height: 56px;
-    font-family: inherit;
+    width: 100%; background: var(--input-bg); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); font-size: 13px;
+    padding: 8px 10px; resize: vertical; min-height: 56px; font-family: inherit;
+    transition: background 0.2s, border-color 0.2s;
   }
   #composer textarea:focus { outline: none; border-color: var(--accent); }
   #composer textarea::placeholder { color: var(--text-dim); }
   #btn-send { background: var(--accent); color: #fff; width: 100%; padding: 8px; font-size: 13px; }
   #btn-send:hover:not(:disabled) { background: var(--accent-hover); }
 
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  /* ── Shortcut hint strip ── */
+  #shortcut-hints {
+    padding: 4px 10px 6px; display: flex; gap: 8px; flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+  }
+  .hint { font-size: 10px; color: var(--text-dim); display: flex; align-items: center; gap: 3px; }
+  .hint kbd { font-size: 10px; padding: 1px 5px; }
+
+  @media (prefers-reduced-motion: reduce) { *, .card { transition: none !important; animation: none !important; } }
   @media (max-width: 600px) {
     #sidebar { width: 100%; position: fixed; bottom: 0; left: 0; right: 0; height: 50vh; border-left: none; border-top: 1px solid var(--border); }
     #iframe-wrap { height: 50vh; }
@@ -112,9 +232,11 @@
   <span class="logo">annotron</span>
   <span id="file-label" title="">—</span>
   <span id="status-dot" title="Connecting…"></span>
-  <button id="btn-annotate" aria-pressed="false">Annotate</button>
-  <button id="btn-download">Download</button>
-  <button id="btn-finalize">Finalize</button>
+  <button id="btn-annotate" aria-pressed="false" title="Toggle annotate mode (A)">Annotate</button>
+  <button id="btn-download" class="btn-neutral" title="Download clean HTML (D)">Download</button>
+  <button id="btn-finalize" title="Write result to disk (Shift+F)">Finalize</button>
+  <button id="btn-theme" title="Toggle dark/light mode (T)" aria-label="Toggle theme">🌙</button>
+  <button id="btn-help" title="Keyboard shortcuts (?)" aria-label="Show keyboard shortcuts">?</button>
 </div>
 
 <div id="main">
@@ -126,8 +248,37 @@
     <div id="pending-cards"></div>
     <div id="composer">
       <textarea id="free-text" placeholder="Message to agent (optional)…" rows="3"></textarea>
-      <button id="btn-send">Send feedback</button>
+      <button id="btn-send" title="Send feedback (Ctrl+Enter)">Send feedback</button>
     </div>
+    <div id="shortcut-hints">
+      <span class="hint"><kbd>A</kbd> Annotate</span>
+      <span class="hint"><kbd>Ctrl</kbd><kbd>Z</kbd> Undo</span>
+      <span class="hint"><kbd>Ctrl</kbd><kbd>↵</kbd> Send</span>
+      <span class="hint"><kbd>Esc</kbd> Off</span>
+      <span class="hint"><kbd>?</kbd> Help</span>
+    </div>
+  </div>
+</div>
+
+<!-- Undo toast -->
+<div id="undo-toast" role="status" aria-live="polite">
+  <span id="undo-msg">Card removed</span>
+  <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
+</div>
+
+<!-- Keyboard shortcut overlay -->
+<div id="kbd-overlay" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div id="kbd-panel">
+    <h2>Keyboard shortcuts</h2>
+    <div class="kbd-row"><span class="kbd-desc">Toggle annotate mode</span><span class="kbd-keys"><kbd>A</kbd></span></div>
+    <div class="kbd-row"><span class="kbd-desc">Exit annotate mode</span><span class="kbd-keys"><kbd>Esc</kbd></span></div>
+    <div class="kbd-row"><span class="kbd-desc">Undo last card removal</span><span class="kbd-keys"><kbd>Ctrl</kbd><kbd>Z</kbd></span></div>
+    <div class="kbd-row"><span class="kbd-desc">Send feedback</span><span class="kbd-keys"><kbd>Ctrl</kbd><kbd>Enter</kbd></span></div>
+    <div class="kbd-row"><span class="kbd-desc">Download clean HTML</span><span class="kbd-keys"><kbd>D</kbd></span></div>
+    <div class="kbd-row"><span class="kbd-desc">Toggle dark / light mode</span><span class="kbd-keys"><kbd>T</kbd></span></div>
+    <div class="kbd-row"><span class="kbd-desc">Show this help</span><span class="kbd-keys"><kbd>?</kbd></span></div>
+    <div class="kbd-row"><span class="kbd-desc">Close help</span><span class="kbd-keys"><kbd>Esc</kbd></span></div>
+    <button id="kbd-close">Close</button>
   </div>
 </div>
 
@@ -139,24 +290,57 @@ const file = params.get('file') || '';
 document.getElementById('file-label').textContent = file || '(no file)';
 document.getElementById('file-label').title = file;
 
-const frame = document.getElementById('artifact-frame');
+const frame      = document.getElementById('artifact-frame');
 const btnAnnotate = document.getElementById('btn-annotate');
 const btnDownload = document.getElementById('btn-download');
 const btnFinalize = document.getElementById('btn-finalize');
-const btnSend = document.getElementById('btn-send');
-const statusDot = document.getElementById('status-dot');
-const convoEl = document.getElementById('conversation');
-const pendingEl = document.getElementById('pending-cards');
-const freeText = document.getElementById('free-text');
+const btnSend    = document.getElementById('btn-send');
+const btnTheme   = document.getElementById('btn-theme');
+const btnHelp    = document.getElementById('btn-help');
+const statusDot  = document.getElementById('status-dot');
+const convoEl    = document.getElementById('conversation');
+const pendingEl  = document.getElementById('pending-cards');
+const freeText   = document.getElementById('free-text');
+const undoToast  = document.getElementById('undo-toast');
+const undoMsg    = document.getElementById('undo-msg');
+const btnUndo    = document.getElementById('btn-undo');
+const kbdOverlay = document.getElementById('kbd-overlay');
+const kbdClose   = document.getElementById('kbd-close');
 
 let annotating = false;
 let pendingItems = [];
+let undoStack = [];      // stack of {item, index} for removed cards
+let undoTimer = null;
 let sdkReady = false;
 let savedScroll = 0;
 let serializeResolvers = {};
 let serializeCounter = 0;
 
-// Load artifact
+// ── Theme ──────────────────────────────────────────────────────────────────
+const savedTheme = localStorage.getItem('annotron-theme') || 'dark';
+setTheme(savedTheme);
+
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  btnTheme.textContent = t === 'dark' ? '🌙' : '☀️';
+  btnTheme.title = `Switch to ${t === 'dark' ? 'light' : 'dark'} mode (T)`;
+  localStorage.setItem('annotron-theme', t);
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  setTheme(cur === 'dark' ? 'light' : 'dark');
+}
+btnTheme.addEventListener('click', toggleTheme);
+
+// ── Keyboard shortcut overlay ──────────────────────────────────────────────
+function openHelp() { kbdOverlay.classList.add('open'); kbdClose.focus(); }
+function closeHelp() { kbdOverlay.classList.remove('open'); btnHelp.focus(); }
+btnHelp.addEventListener('click', openHelp);
+kbdClose.addEventListener('click', closeHelp);
+kbdOverlay.addEventListener('click', (e) => { if (e.target === kbdOverlay) closeHelp(); });
+
+// ── Artifact load ──────────────────────────────────────────────────────────
 function loadArtifact() {
   if (!file) return;
   savedScroll = frame.contentWindow?.scrollY || 0;
@@ -164,37 +348,27 @@ function loadArtifact() {
 }
 loadArtifact();
 
-frame.addEventListener('load', () => {
-  sdkReady = false;
-  // Restore scroll after sdk-ready confirmation
-});
+frame.addEventListener('load', () => { sdkReady = false; });
 
-// PostMessage bridge
+// ── postMessage bridge ─────────────────────────────────────────────────────
 window.addEventListener('message', (e) => {
   const d = e.data;
   if (!d || !d[TAG]) return;
 
   if (d.type === 'sdk-ready') {
     sdkReady = true;
-    // Sync annotate mode
     frame.contentWindow.postMessage({ [TAG]: true, type: 'set-annotate', value: annotating }, '*');
-    // Restore scroll
-    if (savedScroll) {
-      frame.contentWindow.scrollTo(0, savedScroll);
-    }
+    if (savedScroll) frame.contentWindow.scrollTo(0, savedScroll);
     return;
   }
-
   if (d.type === 'element-selected') {
     addCard({ kind: 'element', selector: d.selector, label: d.label, text: '' });
     return;
   }
-
   if (d.type === 'text-selected') {
     addCard({ kind: 'text', selector: d.selector, label: d.label, text: d.text });
     return;
   }
-
   if (d.type === 'serialized') {
     const res = serializeResolvers[d.reqId];
     if (res) { res(d.html); delete serializeResolvers[d.reqId]; }
@@ -210,27 +384,58 @@ function requestSerialize() {
   });
 }
 
-// Annotate toggle
-btnAnnotate.addEventListener('click', () => {
-  annotating = !annotating;
+// ── Annotate toggle ────────────────────────────────────────────────────────
+function setAnnotate(val) {
+  annotating = val;
   btnAnnotate.classList.toggle('active', annotating);
-  btnAnnotate.setAttribute('aria-pressed', annotating);
+  btnAnnotate.setAttribute('aria-pressed', String(annotating));
   if (sdkReady) {
     frame.contentWindow.postMessage({ [TAG]: true, type: 'set-annotate', value: annotating }, '*');
   }
-});
+}
+btnAnnotate.addEventListener('click', () => setAnnotate(!annotating));
 
-// Add pending card
+// ── Undo stack ─────────────────────────────────────────────────────────────
+function showUndoToast(label) {
+  undoMsg.textContent = `Removed: ${label}`;
+  undoToast.classList.add('visible');
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    undoToast.classList.remove('visible');
+  }, 4000);
+}
+
+function hideUndoToast() {
+  clearTimeout(undoTimer);
+  undoToast.classList.remove('visible');
+}
+
+function undoRemove() {
+  if (!undoStack.length) return;
+  const { item, index } = undoStack.pop();
+  pendingItems.splice(index, 0, item);
+  renderCards();
+  hideUndoToast();
+}
+
+btnUndo.addEventListener('click', undoRemove);
+
+// ── Cards ──────────────────────────────────────────────────────────────────
 function addCard(item) {
-  const id = Date.now() + Math.random();
-  item.id = id;
+  item.id = Date.now() + Math.random();
   pendingItems.push(item);
   renderCards();
 }
 
 function removeCard(id) {
-  pendingItems = pendingItems.filter(c => c.id !== id);
+  const index = pendingItems.findIndex(c => c.id === id);
+  if (index === -1) return;
+  const [item] = pendingItems.splice(index, 1);
+  undoStack.push({ item, index });
+  // Keep undo stack to last 10
+  if (undoStack.length > 10) undoStack.shift();
   renderCards();
+  showUndoToast(item.label || item.kind);
 }
 
 function renderCards() {
@@ -238,29 +443,34 @@ function renderCards() {
   pendingItems.forEach(item => {
     const card = document.createElement('div');
     card.className = 'card';
+
     const removeBtn = document.createElement('button');
     removeBtn.className = 'card-remove';
     removeBtn.textContent = '×';
-    removeBtn.title = 'Remove';
+    removeBtn.title = 'Remove card';
     removeBtn.setAttribute('aria-label', 'Remove card');
     removeBtn.addEventListener('click', () => removeCard(item.id));
+
     const kind = document.createElement('div');
     kind.className = 'card-kind';
     kind.textContent = item.kind;
+
     const label = document.createElement('div');
     label.className = 'card-label';
     label.textContent = item.label;
+
     const ta = document.createElement('textarea');
     ta.placeholder = 'Add a note…';
     ta.value = item.note || '';
     ta.addEventListener('input', () => { item.note = ta.value; });
+
     card.append(removeBtn, kind, label, ta);
     pendingEl.appendChild(card);
   });
 }
 
-// Send feedback
-btnSend.addEventListener('click', async () => {
+// ── Send feedback ──────────────────────────────────────────────────────────
+async function sendFeedback() {
   const items = pendingItems.map(c => ({
     kind: c.kind,
     selector: c.selector || null,
@@ -279,18 +489,21 @@ btnSend.addEventListener('click', async () => {
     });
     const summary = items.length
       ? `Sent ${items.length} annotation${items.length > 1 ? 's' : ''}${message ? ' + message' : ''}`
-      : `Sent message`;
+      : 'Sent message';
     addConvoMsg('human', summary + (message ? `\n\n${message}` : ''));
     pendingItems = [];
+    undoStack = [];
+    hideUndoToast();
     renderCards();
     freeText.value = '';
   } finally {
     btnSend.disabled = false;
   }
-});
+}
+btnSend.addEventListener('click', sendFeedback);
 
-// Download
-btnDownload.addEventListener('click', async () => {
+// ── Download ───────────────────────────────────────────────────────────────
+async function doDownload() {
   if (!sdkReady) return;
   btnDownload.disabled = true;
   try {
@@ -304,9 +517,10 @@ btnDownload.addEventListener('click', async () => {
   } finally {
     btnDownload.disabled = false;
   }
-});
+}
+btnDownload.addEventListener('click', doDownload);
 
-// Finalize
+// ── Finalize ───────────────────────────────────────────────────────────────
 btnFinalize.addEventListener('click', async () => {
   if (!sdkReady) return;
   const ok = confirm('Write the current rendered artifact to disk? This overwrites the file.');
@@ -329,7 +543,7 @@ btnFinalize.addEventListener('click', async () => {
   }
 });
 
-// Conversation log
+// ── Conversation log ───────────────────────────────────────────────────────
 function addConvoMsg(role, text) {
   const el = document.createElement('div');
   el.className = 'msg ' + role;
@@ -343,28 +557,21 @@ function addConvoMsg(role, text) {
   convoEl.scrollTop = convoEl.scrollHeight;
 }
 
-// SSE for reload + agent-reply
+// ── SSE ────────────────────────────────────────────────────────────────────
 function connectSSE() {
   if (!file) return;
   const es = new EventSource('/events?file=' + encodeURIComponent(file));
-
   es.addEventListener('reload', () => {
     savedScroll = frame.contentWindow?.scrollY || 0;
     loadArtifact();
   });
-
   es.addEventListener('agent-reply', (e) => {
     try {
       const d = JSON.parse(e.data);
       addConvoMsg('agent', d.message || e.data);
     } catch { addConvoMsg('agent', e.data); }
   });
-
-  es.onopen = () => {
-    statusDot.classList.add('live');
-    statusDot.title = 'Live';
-  };
-
+  es.onopen = () => { statusDot.classList.add('live'); statusDot.title = 'Live'; };
   es.onerror = () => {
     statusDot.classList.remove('live');
     statusDot.title = 'Disconnected — reconnecting…';
@@ -373,6 +580,40 @@ function connectSSE() {
   };
 }
 connectSSE();
+
+// ── Global keyboard shortcuts ──────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  const inInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+  const ctrl = e.ctrlKey || e.metaKey;
+  const helpOpen = kbdOverlay.classList.contains('open');
+
+  // Always: Esc
+  if (e.key === 'Escape') {
+    if (helpOpen) { closeHelp(); return; }
+    if (annotating) { setAnnotate(false); return; }
+  }
+
+  // Always: Ctrl+Z undo
+  if (ctrl && e.key === 'z' && !e.shiftKey) {
+    if (undoStack.length) { e.preventDefault(); undoRemove(); }
+    return;
+  }
+
+  // In textarea: Ctrl+Enter to send
+  if (ctrl && e.key === 'Enter') {
+    e.preventDefault();
+    sendFeedback();
+    return;
+  }
+
+  // Non-input shortcuts
+  if (!inInput && !ctrl) {
+    if (e.key === 'a' || e.key === 'A') { e.preventDefault(); setAnnotate(!annotating); return; }
+    if (e.key === 'd' || e.key === 'D') { e.preventDefault(); doDownload(); return; }
+    if (e.key === 't' || e.key === 'T') { e.preventDefault(); toggleTheme(); return; }
+    if (e.key === '?') { e.preventDefault(); helpOpen ? closeHelp() : openHelp(); return; }
+  }
+});
 </script>
 </body>
 </html>
