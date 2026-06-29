@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>annotron</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bar-h: 52px;
+    --bg: #1a1b1e;
+    --bar-bg: #25262b;
+    --border: #373a40;
+    --text: #c9cdd4;
+    --text-dim: #6c7280;
+    --accent: #4f8ef7;
+    --accent-hover: #3a7ae0;
+    --danger: #e74c3c;
+    --green: #2ecc71;
+    --card-bg: #2c2d32;
+    --input-bg: #1e1f23;
+    --radius: 6px;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; font-size: 14px; }
+
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--bar-h);
+    background: var(--bar-bg); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px; padding: 0 14px; z-index: 100;
+  }
+  #topbar .logo { font-weight: 700; font-size: 15px; letter-spacing: 0.5px; color: var(--accent); flex-shrink: 0; }
+  #file-label { font-family: monospace; font-size: 12px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; direction: rtl; text-align: left; }
+  #status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; transition: background 0.3s; }
+  #status-dot.live { background: var(--green); }
+  .spacer { flex: 1; }
+
+  button {
+    border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px;
+    padding: 6px 14px; font-weight: 500; transition: background 0.15s, opacity 0.15s;
+  }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  #btn-annotate { background: var(--border); color: var(--text); }
+  #btn-annotate.active { background: var(--accent); color: #fff; }
+  #btn-download { background: var(--border); color: var(--text); }
+  #btn-finalize { background: var(--danger); color: #fff; }
+  #btn-download:hover:not(:disabled), #btn-annotate:hover:not(:disabled):not(.active) { background: #444750; }
+  #btn-finalize:hover:not(:disabled) { background: #c0392b; }
+  #btn-annotate.active:hover { background: var(--accent-hover); }
+
+  #main { display: flex; height: calc(100vh - var(--bar-h)); margin-top: var(--bar-h); }
+
+  #iframe-wrap { flex: 1; min-width: 0; position: relative; background: #fff; }
+  iframe { width: 100%; height: 100%; border: none; display: block; }
+
+  #sidebar {
+    width: 340px; flex-shrink: 0; border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; background: var(--bg); overflow: hidden;
+  }
+
+  #conversation {
+    flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .msg { border-radius: var(--radius); padding: 10px 12px; font-size: 13px; line-height: 1.5; }
+  .msg.human { background: var(--card-bg); align-self: flex-end; max-width: 100%; }
+  .msg.agent { background: #1e3a5f; align-self: flex-start; max-width: 100%; }
+  .msg .msg-label { font-size: 11px; font-weight: 600; color: var(--text-dim); margin-bottom: 4px; }
+  .msg.human .msg-label { color: var(--accent); }
+  .msg.agent .msg-label { color: #7ab3f5; }
+
+  #pending-cards { display: flex; flex-direction: column; gap: 6px; padding: 0 10px 6px; }
+  .card {
+    background: var(--card-bg); border-radius: var(--radius); padding: 10px;
+    border-left: 3px solid var(--accent); font-size: 12px;
+  }
+  .card .card-kind { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .card .card-label { color: var(--text); margin: 2px 0 6px; word-break: break-all; }
+  .card textarea {
+    width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-size: 12px; padding: 5px 7px; resize: vertical; min-height: 50px;
+    font-family: inherit;
+  }
+  .card textarea:focus { outline: none; border-color: var(--accent); }
+  .card-remove { float: right; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; padding: 0 4px; line-height: 1; }
+  .card-remove:hover { color: var(--danger); }
+
+  #composer {
+    border-top: 1px solid var(--border); padding: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  #composer textarea {
+    width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); font-size: 13px; padding: 8px 10px; resize: vertical; min-height: 56px;
+    font-family: inherit;
+  }
+  #composer textarea:focus { outline: none; border-color: var(--accent); }
+  #composer textarea::placeholder { color: var(--text-dim); }
+  #btn-send { background: var(--accent); color: #fff; width: 100%; padding: 8px; font-size: 13px; }
+  #btn-send:hover:not(:disabled) { background: var(--accent-hover); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (max-width: 600px) {
+    #sidebar { width: 100%; position: fixed; bottom: 0; left: 0; right: 0; height: 50vh; border-left: none; border-top: 1px solid var(--border); }
+    #iframe-wrap { height: 50vh; }
+  }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">annotron</span>
+  <span id="file-label" title="">—</span>
+  <span id="status-dot" title="Connecting…"></span>
+  <button id="btn-annotate" aria-pressed="false">Annotate</button>
+  <button id="btn-download">Download</button>
+  <button id="btn-finalize">Finalize</button>
+</div>
+
+<div id="main">
+  <div id="iframe-wrap">
+    <iframe id="artifact-frame" title="Artifact preview" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+  </div>
+  <div id="sidebar">
+    <div id="conversation"></div>
+    <div id="pending-cards"></div>
+    <div id="composer">
+      <textarea id="free-text" placeholder="Message to agent (optional)…" rows="3"></textarea>
+      <button id="btn-send">Send feedback</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TAG = 'annotron-sdk';
+const params = new URLSearchParams(location.search);
+const file = params.get('file') || '';
+
+document.getElementById('file-label').textContent = file || '(no file)';
+document.getElementById('file-label').title = file;
+
+const frame = document.getElementById('artifact-frame');
+const btnAnnotate = document.getElementById('btn-annotate');
+const btnDownload = document.getElementById('btn-download');
+const btnFinalize = document.getElementById('btn-finalize');
+const btnSend = document.getElementById('btn-send');
+const statusDot = document.getElementById('status-dot');
+const convoEl = document.getElementById('conversation');
+const pendingEl = document.getElementById('pending-cards');
+const freeText = document.getElementById('free-text');
+
+let annotating = false;
+let pendingItems = [];
+let sdkReady = false;
+let savedScroll = 0;
+let serializeResolvers = {};
+let serializeCounter = 0;
+
+// Load artifact
+function loadArtifact() {
+  if (!file) return;
+  savedScroll = frame.contentWindow?.scrollY || 0;
+  frame.src = '/artifact?file=' + encodeURIComponent(file);
+}
+loadArtifact();
+
+frame.addEventListener('load', () => {
+  sdkReady = false;
+  // Restore scroll after sdk-ready confirmation
+});
+
+// PostMessage bridge
+window.addEventListener('message', (e) => {
+  const d = e.data;
+  if (!d || !d[TAG]) return;
+
+  if (d.type === 'sdk-ready') {
+    sdkReady = true;
+    // Sync annotate mode
+    frame.contentWindow.postMessage({ [TAG]: true, type: 'set-annotate', value: annotating }, '*');
+    // Restore scroll
+    if (savedScroll) {
+      frame.contentWindow.scrollTo(0, savedScroll);
+    }
+    return;
+  }
+
+  if (d.type === 'element-selected') {
+    addCard({ kind: 'element', selector: d.selector, label: d.label, text: '' });
+    return;
+  }
+
+  if (d.type === 'text-selected') {
+    addCard({ kind: 'text', selector: d.selector, label: d.label, text: d.text });
+    return;
+  }
+
+  if (d.type === 'serialized') {
+    const res = serializeResolvers[d.reqId];
+    if (res) { res(d.html); delete serializeResolvers[d.reqId]; }
+    return;
+  }
+});
+
+function requestSerialize() {
+  return new Promise((resolve) => {
+    const reqId = ++serializeCounter;
+    serializeResolvers[reqId] = resolve;
+    frame.contentWindow.postMessage({ [TAG]: true, type: 'serialize', reqId }, '*');
+  });
+}
+
+// Annotate toggle
+btnAnnotate.addEventListener('click', () => {
+  annotating = !annotating;
+  btnAnnotate.classList.toggle('active', annotating);
+  btnAnnotate.setAttribute('aria-pressed', annotating);
+  if (sdkReady) {
+    frame.contentWindow.postMessage({ [TAG]: true, type: 'set-annotate', value: annotating }, '*');
+  }
+});
+
+// Add pending card
+function addCard(item) {
+  const id = Date.now() + Math.random();
+  item.id = id;
+  pendingItems.push(item);
+  renderCards();
+}
+
+function removeCard(id) {
+  pendingItems = pendingItems.filter(c => c.id !== id);
+  renderCards();
+}
+
+function renderCards() {
+  pendingEl.innerHTML = '';
+  pendingItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'card-remove';
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Remove';
+    removeBtn.setAttribute('aria-label', 'Remove card');
+    removeBtn.addEventListener('click', () => removeCard(item.id));
+    const kind = document.createElement('div');
+    kind.className = 'card-kind';
+    kind.textContent = item.kind;
+    const label = document.createElement('div');
+    label.className = 'card-label';
+    label.textContent = item.label;
+    const ta = document.createElement('textarea');
+    ta.placeholder = 'Add a note…';
+    ta.value = item.note || '';
+    ta.addEventListener('input', () => { item.note = ta.value; });
+    card.append(removeBtn, kind, label, ta);
+    pendingEl.appendChild(card);
+  });
+}
+
+// Send feedback
+btnSend.addEventListener('click', async () => {
+  const items = pendingItems.map(c => ({
+    kind: c.kind,
+    selector: c.selector || null,
+    text: c.text || null,
+    note: c.note || null,
+  }));
+  const message = freeText.value.trim();
+  if (!items.length && !message) return;
+
+  btnSend.disabled = true;
+  try {
+    await fetch('/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file, items, message }),
+    });
+    const summary = items.length
+      ? `Sent ${items.length} annotation${items.length > 1 ? 's' : ''}${message ? ' + message' : ''}`
+      : `Sent message`;
+    addConvoMsg('human', summary + (message ? `\n\n${message}` : ''));
+    pendingItems = [];
+    renderCards();
+    freeText.value = '';
+  } finally {
+    btnSend.disabled = false;
+  }
+});
+
+// Download
+btnDownload.addEventListener('click', async () => {
+  if (!sdkReady) return;
+  btnDownload.disabled = true;
+  try {
+    const html = await requestSerialize();
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = file.split('/').pop() || 'artifact.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } finally {
+    btnDownload.disabled = false;
+  }
+});
+
+// Finalize
+btnFinalize.addEventListener('click', async () => {
+  if (!sdkReady) return;
+  const ok = confirm('Write the current rendered artifact to disk? This overwrites the file.');
+  if (!ok) return;
+  btnFinalize.disabled = true;
+  try {
+    const html = await requestSerialize();
+    const res = await fetch('/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file, html }),
+    });
+    if (res.ok) {
+      addConvoMsg('human', 'Finalized — result written to disk.');
+    } else {
+      alert('Finalize failed: ' + res.statusText);
+    }
+  } finally {
+    btnFinalize.disabled = false;
+  }
+});
+
+// Conversation log
+function addConvoMsg(role, text) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'human' ? 'You' : 'Agent';
+  const body = document.createElement('div');
+  body.textContent = text;
+  el.append(label, body);
+  convoEl.appendChild(el);
+  convoEl.scrollTop = convoEl.scrollHeight;
+}
+
+// SSE for reload + agent-reply
+function connectSSE() {
+  if (!file) return;
+  const es = new EventSource('/events?file=' + encodeURIComponent(file));
+
+  es.addEventListener('reload', () => {
+    savedScroll = frame.contentWindow?.scrollY || 0;
+    loadArtifact();
+  });
+
+  es.addEventListener('agent-reply', (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      addConvoMsg('agent', d.message || e.data);
+    } catch { addConvoMsg('agent', e.data); }
+  });
+
+  es.onopen = () => {
+    statusDot.classList.add('live');
+    statusDot.title = 'Live';
+  };
+
+  es.onerror = () => {
+    statusDot.classList.remove('live');
+    statusDot.title = 'Disconnected — reconnecting…';
+    es.close();
+    setTimeout(connectSSE, 3000);
+  };
+}
+connectSSE();
+</script>
+</body>
+</html>

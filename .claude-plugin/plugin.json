@@ -1,0 +1,6 @@
+{
+  "name": "annotron",
+  "version": "0.1.0",
+  "description": "Review agent-generated HTML artifacts: annotate elements/text, send feedback, finalize into the file, download.",
+  "author": { "name": "Meii" }
+}

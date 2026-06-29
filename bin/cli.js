@@ -1,0 +1,172 @@
+#!/usr/bin/env node
+import http from 'http';
+import https from 'https';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PORT = parseInt(process.env.ANNOTRON_PORT || '7321', 10);
+const HOST = process.env.ANNOTRON_HOST || '127.0.0.1';
+const BASE = `http://${HOST}:${PORT}`;
+
+// --- Helpers ---
+function apiFetch(path, opts = {}) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(path, BASE);
+    const reqOpts = {
+      hostname: url.hostname,
+      port: url.port,
+      path: url.pathname + url.search,
+      method: opts.method || 'GET',
+      headers: opts.headers || {},
+    };
+    const req = http.request(reqOpts, (res) => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+    });
+    req.on('error', reject);
+    if (opts.body) req.write(opts.body);
+    req.end();
+  });
+}
+
+async function isServerRunning() {
+  try {
+    const r = await apiFetch('/health');
+    return r.status === 200;
+  } catch { return false; }
+}
+
+async function ensureServer() {
+  if (await isServerRunning()) return;
+  const serverPath = path.join(__dirname, '..', 'src', 'server.js');
+  const child = spawn(process.execPath, [serverPath], {
+    stdio: 'ignore',
+    detached: true,
+    env: { ...process.env },
+  });
+  child.unref();
+
+  // Wait up to 3s for it to start
+  for (let i = 0; i < 15; i++) {
+    await sleep(200);
+    if (await isServerRunning()) return;
+  }
+  throw new Error('Server failed to start');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function postJSON(path, body) {
+  return apiFetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+function openBrowser(url) {
+  const cmd = process.platform === 'darwin' ? 'open'
+    : process.platform === 'win32' ? 'start'
+    : 'xdg-open';
+  spawn(cmd, [url], { stdio: 'ignore', detached: true }).unref();
+}
+
+// --- Commands ---
+async function cmdOpen(file) {
+  if (!file) { console.error('Usage: annotron <file.html>'); process.exit(1); }
+  const abs = path.resolve(file);
+  if (!fs.existsSync(abs)) { console.error(`File not found: ${abs}`); process.exit(1); }
+  if (!abs.endsWith('.html')) { console.error('File must be .html'); process.exit(1); }
+
+  await ensureServer();
+
+  const r = await postJSON('/session', { file: abs });
+  if (r.status !== 200) {
+    const err = JSON.parse(r.body);
+    console.error('Session error:', err.error);
+    process.exit(1);
+  }
+
+  const editorUrl = `${BASE}/?file=${encodeURIComponent(abs)}`;
+  console.log('Editor URL:', editorUrl);
+  console.log('Poll command: annotron poll', abs);
+  openBrowser(editorUrl);
+}
+
+async function cmdPoll(file, reply) {
+  if (!file) { console.error('Usage: annotron poll <file.html> [--reply "msg"]'); process.exit(1); }
+  const abs = path.resolve(file);
+
+  if (reply) {
+    const r = await postJSON('/agent-reply', { file: abs, message: reply });
+    if (r.status !== 200) { console.error('Reply failed:', r.body); }
+  }
+
+  // Long-poll loop
+  let result = null;
+  while (!result) {
+    let r;
+    try {
+      r = await apiFetch('/poll?file=' + encodeURIComponent(abs));
+    } catch (e) {
+      console.error('Poll error:', e.message);
+      process.exit(1);
+    }
+    if (r.status !== 200) { console.error('Poll error:', r.body); process.exit(1); }
+    const body = JSON.parse(r.body);
+    if (body.finalized) {
+      console.log(JSON.stringify({ finalized: true }));
+      result = body;
+    } else if (body.feedback) {
+      console.log(JSON.stringify(body.feedback, null, 2));
+      result = body;
+    }
+    // else keep-alive empty response — loop
+  }
+}
+
+async function cmdStop() {
+  try {
+    await postJSON('/stop', {});
+    console.log('Server stopped.');
+  } catch { console.log('Server not running.'); }
+}
+
+function cmdHelp() {
+  console.log(`
+annotron — local review editor for agent-generated HTML artifacts
+
+Usage:
+  annotron <file.html>                    Open the editor in browser
+  annotron poll <file.html>               Wait for feedback (run by agent)
+  annotron poll <file.html> --reply "…"  Post a reply then wait for feedback
+  annotron stop                           Shut down the background server
+  annotron help                           Show this help
+
+Environment:
+  ANNOTRON_PORT   Server port (default: 7321)
+  ANNOTRON_HOST   Server bind host (default: 127.0.0.1)
+`);
+}
+
+// --- Main ---
+const args = process.argv.slice(2);
+const cmd = args[0];
+
+if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
+  cmdHelp();
+} else if (cmd === 'stop') {
+  await cmdStop();
+} else if (cmd === 'poll') {
+  const file = args[1];
+  const replyIdx = args.indexOf('--reply');
+  const reply = replyIdx !== -1 ? args[replyIdx + 1] : null;
+  await cmdPoll(file, reply);
+} else {
+  // annotron <file.html>
+  await cmdOpen(cmd);
+}
