@@ -280,6 +280,23 @@
     if (d.type === 'serialize') {
       e.source.postMessage({ [TAG]: true, type: 'serialized', html: serialize(), reqId: d.reqId }, '*');
     }
+    if (d.type === 'jump-to-element') {
+      const target = d.selector ? document.querySelector(d.selector) : null;
+      if (target) {
+        dismissCard();
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightElement(target);
+      }
+    }
+    if (d.type === 'clear-highlight') {
+      clearHighlights();
+      if (hovered) {
+        hovered.style.outline = '';
+        hovered.style.outlineOffset = '';
+        hovered.style.cursor = '';
+        hovered = null;
+      }
+    }
   });
 
   window.parent.postMessage({ [TAG]: true, type: 'sdk-ready' }, '*');

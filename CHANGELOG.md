@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.0] - 2026-06-30
+
+### Added
+- **Annotation persistence**: every annotation is saved to a sidecar JSON file (`artifact.annotron.json`) beside the HTML, surviving server restarts and page reloads
+- **Thread UI per annotation**: each annotation card in the sidebar shows the full conversation thread (human notes + agent replies) — reply inline per annotation without leaving the context
+- **Click annotation to jump**: clicking an annotation card header scrolls to and highlights the corresponding element in the preview iframe
+- **Annotations restored on load**: previously created annotations are loaded from the sidecar on startup, so all past context is preserved
+- **History tab**: sidebar now has an Annotations tab and a History tab — the History tab lists past feedback rounds with timestamps and annotation counts
+- **`GET /annotations` and `POST /annotations` endpoints**: read/write the sidecar JSON for any registered file
+- **Targeted agent replies**: `annotron poll <file> --reply "…" --annotation-id <id>` posts the reply to a specific annotation's thread
+- **`jump-to-element` and `clear-highlight` postMessage handlers in SDK**: chrome can programmatically scroll and highlight elements in the artifact iframe
+
+### Changed
+- Sidebar redesigned with tab navigation (Annotations / History), replacing the single flat conversation log
+- Sending feedback now reloads annotation state from server to reflect server-assigned IDs
+- `agent-reply` SSE event now carries `annotationId` when the reply targets a specific annotation; chrome updates that card's thread instead of the general conversation log
+- `/agent-reply` endpoint accepts optional `annotationId` — appends reply to that annotation's thread in the sidecar
+- `/feedback` endpoint assigns real IDs to new annotations and reflects them back in the poll payload
+
 ## [0.3.0] - 2026-06-30
 
 ### Added

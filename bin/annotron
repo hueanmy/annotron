@@ -97,12 +97,12 @@ async function cmdOpen(file) {
   openBrowser(editorUrl);
 }
 
-async function cmdPoll(file, reply) {
+async function cmdPoll(file, reply, annotationId) {
   if (!file) { console.error('Usage: annotron poll <file.html> [--reply "msg"]'); process.exit(1); }
   const abs = path.resolve(file);
 
   if (reply) {
-    const r = await postJSON('/agent-reply', { file: abs, message: reply });
+    const r = await postJSON('/agent-reply', { file: abs, message: reply, annotationId: annotationId || null });
     if (r.status !== 200) { console.error('Reply failed:', r.body); }
   }
 
@@ -165,7 +165,9 @@ if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
   const file = args[1];
   const replyIdx = args.indexOf('--reply');
   const reply = replyIdx !== -1 ? args[replyIdx + 1] : null;
-  await cmdPoll(file, reply);
+  const annIdx = args.indexOf('--annotation-id');
+  const annotationId = annIdx !== -1 ? args[annIdx + 1] : null;
+  await cmdPoll(file, reply, annotationId);
 } else {
   // annotron <file.html>
   await cmdOpen(cmd);

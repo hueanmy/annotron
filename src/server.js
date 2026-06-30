@@ -53,6 +53,22 @@ function hashFile(file) {
   } catch { return null; }
 }
 
+function sidecarPath(file) {
+  const ext = path.extname(file);
+  return file.slice(0, -ext.length) + '.annotron.json';
+}
+
+function readSidecar(file) {
+  try {
+    const raw = fs.readFileSync(sidecarPath(file), 'utf8');
+    return JSON.parse(raw);
+  } catch { return { version: 1, annotations: [], rounds: [] }; }
+}
+
+function writeSidecar(file, data) {
+  fs.writeFileSync(sidecarPath(file), JSON.stringify(data, null, 2), 'utf8');
+}
+
 // --- SSE broadcast ---
 function broadcastSSE(file, event, data) {
   const sess = sessions.get(file);
@@ -133,7 +149,7 @@ async function handler(req, res) {
 
   if (pathname === '/sdk.js' && method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/javascript' });
-    res.end(SDK_JS);
+    res.end(fs.readFileSync(SDK_PATH, 'utf8'));
     return;
   }
 
@@ -150,12 +166,60 @@ async function handler(req, res) {
     return;
   }
 
+  if (pathname === '/annotations' && method === 'GET') {
+    const file = u.searchParams.get('file');
+    if (!file) return send(res, 400, { error: 'missing file' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    return send(res, 200, readSidecar(abs));
+  }
+
+  if (pathname === '/annotations' && method === 'POST') {
+    const body = await readBody(req);
+    const file = body.file;
+    if (!file) return send(res, 400, { error: 'missing file' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    const current = readSidecar(abs);
+    current.annotations = body.annotations || current.annotations;
+    if (body.rounds) current.rounds = body.rounds;
+    writeSidecar(abs, current);
+    return send(res, 200, { ok: true });
+  }
+
   if (pathname === '/feedback' && method === 'POST') {
     const body = await readBody(req);
     const file = body.file;
     if (!file) return send(res, 400, { error: 'missing file' });
     const abs = path.resolve(file);
     if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    // Persist annotations to sidecar
+    if (body.items && body.items.length > 0) {
+      const sidecar = readSidecar(abs);
+      for (const item of body.items) {
+        const existing = item.id ? sidecar.annotations.find(a => a.id === item.id) : null;
+        if (existing) {
+          // Add new message to existing thread
+          if (!existing.thread) existing.thread = [];
+          if (item.note) existing.thread.push({ role: 'human', message: item.note, timestamp: new Date().toISOString() });
+        } else {
+          // New annotation
+          const ann = {
+            id: item.id || ('ann_' + Math.random().toString(36).slice(2, 9)),
+            kind: item.kind,
+            selector: item.selector || null,
+            label: item.label || null,
+            text: item.text || null,
+            thread: item.note ? [{ role: 'human', message: item.note, timestamp: new Date().toISOString() }] : [],
+            createdAt: new Date().toISOString(),
+            status: 'open',
+          };
+          item.id = ann.id;
+          sidecar.annotations.push(ann);
+        }
+      }
+      writeSidecar(abs, sidecar);
+    }
     const sess = getSession(abs);
     sess.pendingFeedback = body;
     sess.finalized = false;
@@ -217,7 +281,17 @@ async function handler(req, res) {
     if (!file || !body.message) return send(res, 400, { error: 'missing file or message' });
     const abs = path.resolve(file);
     if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
-    broadcastSSE(abs, 'agent-reply', JSON.stringify({ message: body.message }));
+    // Persist reply into sidecar thread if annotationId given
+    if (body.annotationId) {
+      const sidecar = readSidecar(abs);
+      const ann = sidecar.annotations.find(a => a.id === body.annotationId);
+      if (ann) {
+        if (!ann.thread) ann.thread = [];
+        ann.thread.push({ role: 'agent', message: body.message, timestamp: new Date().toISOString() });
+        writeSidecar(abs, sidecar);
+      }
+    }
+    broadcastSSE(abs, 'agent-reply', JSON.stringify({ message: body.message, annotationId: body.annotationId || null }));
     return send(res, 200, { ok: true });
   }
 
