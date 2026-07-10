@@ -133,6 +133,7 @@
     animation: card-in 0.15s ease;
   }
   .ann-card.pending-new { border-left-color: var(--pending-border); }
+  .ann-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   @keyframes card-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
   .ann-card-header {
@@ -245,7 +246,7 @@
     <!-- Annotations tab -->
     <div id="tab-annotations" class="tab-panel active">
       <div id="annotations-list">
-        <div class="empty-state" id="ann-empty">No annotations yet.<br>Enable <strong>Annotate</strong> mode and click elements.</div>
+        <div class="empty-state" id="ann-empty">No comments yet.<br>Select text, right-click, then choose <strong>Comment</strong>.</div>
       </div>
       <div id="conversation"></div>
     </div>
@@ -262,7 +263,7 @@
       <button id="btn-send" title="Send feedback (Enter)">Send feedback</button>
     </div>
     <div id="shortcut-hints">
-      <span class="hint"><kbd>A</kbd> Annotate</span>
+      <span class="hint">Select text → comment icon</span>
       <span class="hint"><kbd>Ctrl</kbd><kbd>Z</kbd> Undo</span>
       <span class="hint"><kbd>↵</kbd> Send</span>
       <span class="hint"><kbd>Esc</kbd> Off</span>
@@ -279,7 +280,7 @@
 <div id="kbd-overlay" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
   <div id="kbd-panel">
     <h2>Keyboard shortcuts</h2>
-    <div class="kbd-row"><span class="kbd-desc">Toggle annotate mode</span><span class="kbd-keys"><kbd>A</kbd></span></div>
+    <div class="kbd-row"><span class="kbd-desc">Text comment</span><span class="kbd-keys">Select text + Right-click</span></div>
     <div class="kbd-row"><span class="kbd-desc">Exit annotate mode</span><span class="kbd-keys"><kbd>Esc</kbd></span></div>
     <div class="kbd-row"><span class="kbd-desc">Undo last removal</span><span class="kbd-keys"><kbd>Ctrl</kbd><kbd>Z</kbd></span></div>
     <div class="kbd-row"><span class="kbd-desc">Send feedback</span><span class="kbd-keys"><kbd>Enter</kbd></span></div>
@@ -329,6 +330,7 @@ let serializeResolvers = {};
 let serializeCounter = 0;
 let undoStack = [];
 let undoTimer = null;
+let selectedAnnotationId = null;
 
 // annotations: array of saved annotation objects (with threads)
 // Each: { id, kind, selector, label, text, thread: [{role,message,timestamp}], createdAt, status }
@@ -382,6 +384,7 @@ window.addEventListener('message', (e) => {
   if (d.type === 'sdk-ready') {
     sdkReady = true;
     frame.contentWindow.postMessage({ [TAG]: true, type: 'set-annotate', value: annotating }, '*');
+    syncAnnotationsToArtifact();
     if (savedScroll) frame.contentWindow.scrollTo(0, savedScroll);
     return;
   }
@@ -390,7 +393,16 @@ window.addEventListener('message', (e) => {
     return;
   }
   if (d.type === 'text-selected') {
-    addPending({ kind: 'text', selector: d.selector, label: d.label, text: d.text, note: d.note || '' });
+    addPending({
+      kind: 'text', selector: d.selector, label: d.label, text: d.text, note: d.note || '',
+      textStart: d.textStart, textEnd: d.textEnd,
+      textPrefix: d.textPrefix || '', textSuffix: d.textSuffix || '',
+    });
+    return;
+  }
+  if (d.type === 'annotation-selected') {
+    document.querySelector('.stab[data-tab=annotations]').click();
+    selectAnnotation(d.id);
     return;
   }
   if (d.type === 'serialized') {
@@ -421,6 +433,36 @@ btnAnnotate.addEventListener('click', () => setAnnotate(!annotating));
 function jumpToElement(selector) {
   if (!selector || !sdkReady) return;
   frame.contentWindow?.postMessage({ [TAG]: true, type: 'jump-to-element', selector }, '*');
+}
+
+function visibleAnnotations() {
+  return annotations.concat(pendingNew);
+}
+
+function syncAnnotationsToArtifact() {
+  if (!sdkReady) return;
+  frame.contentWindow?.postMessage({
+    [TAG]: true,
+    type: 'set-annotations',
+    annotations: visibleAnnotations(),
+    selectedId: selectedAnnotationId,
+  }, '*');
+}
+
+function selectAnnotation(id, shouldFocusArtifact = false) {
+  selectedAnnotationId = id;
+  renderAnnotations();
+  const card = annList.querySelector(`[data-id='${CSS.escape(id)}']`);
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    card.querySelector('.ann-card-header')?.focus({ preventScroll: true });
+  }
+  const annotation = visibleAnnotations().find(item => item.id === id);
+  if (shouldFocusArtifact && annotation) {
+    frame.contentWindow?.postMessage({ [TAG]: true, type: 'focus-annotation', annotation }, '*');
+  } else {
+    syncAnnotationsToArtifact();
+  }
 }
 
 // ── Load annotations from server ──────────────────────────────────────────
@@ -476,16 +518,18 @@ function renderAnnotations() {
       annList.appendChild(el);
     });
   }
+  syncAnnotationsToArtifact();
 }
 
 function buildAnnotationCard(ann, isPending) {
   const card = document.createElement('div');
-  card.className = 'ann-card' + (isPending ? ' pending-new' : '');
+  card.className = 'ann-card' + (isPending ? ' pending-new' : '') + (ann.id === selectedAnnotationId ? ' selected' : '');
   card.dataset.id = ann.id;
 
   // Header
   const header = document.createElement('div');
   header.className = 'ann-card-header';
+  header.tabIndex = 0;
   header.title = ann.selector ? 'Click to jump to element in preview' : '';
 
   const kind = document.createElement('span');
@@ -517,7 +561,13 @@ function buildAnnotationCard(ann, isPending) {
   header.append(kind, label, jumpIcon, removeBtn);
   if (ann.selector) {
     header.style.cursor = 'pointer';
-    header.addEventListener('click', () => jumpToElement(ann.selector));
+    header.addEventListener('click', () => selectAnnotation(ann.id, true));
+    header.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectAnnotation(ann.id, true);
+      }
+    });
   }
   card.appendChild(header);
 
@@ -640,6 +690,7 @@ function renderHistory(rounds) {
 function addPending(item) {
   item.id = 'pending_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
   pendingNew.push(item);
+  selectedAnnotationId = item.id;
   renderAnnotations();
   // Switch to annotations tab
   document.querySelector('.stab[data-tab="annotations"]').click();
@@ -649,6 +700,7 @@ function removePending(id) {
   const idx = pendingNew.findIndex(c => c.id === id);
   if (idx === -1) return;
   const [item] = pendingNew.splice(idx, 1);
+  if (selectedAnnotationId === id) selectedAnnotationId = null;
   undoStack.push({ type: 'pending', item, index: idx });
   if (undoStack.length > 10) undoStack.shift();
   renderAnnotations();
@@ -659,6 +711,7 @@ function removeAnnotation(id) {
   const idx = annotations.findIndex(a => a.id === id);
   if (idx === -1) return;
   const [ann] = annotations.splice(idx, 1);
+  if (selectedAnnotationId === id) selectedAnnotationId = null;
   undoStack.push({ type: 'saved', item: ann, index: idx });
   if (undoStack.length > 10) undoStack.shift();
   renderAnnotations();
@@ -679,6 +732,7 @@ function undoRemove() {
   const { type, item, index } = undoStack.pop();
   if (type === 'pending') pendingNew.splice(index, 0, item);
   else { annotations.splice(index, 0, item); saveAnnotations(); }
+  selectedAnnotationId = item.id;
   renderAnnotations();
   hideUndoToast();
 }
@@ -692,6 +746,10 @@ async function sendFeedback() {
     selector: c.selector || null,
     label: c.label || null,
     text: c.text || null,
+    textStart: c.textStart ?? null,
+    textEnd: c.textEnd ?? null,
+    textPrefix: c.textPrefix || null,
+    textSuffix: c.textSuffix || null,
     note: c.note || null,
   }));
   const message = freeText.value.trim();
@@ -707,6 +765,7 @@ async function sendFeedback() {
     if (res.ok) {
       // Move pending to saved (reload from server to get real ids)
       pendingNew = [];
+      selectedAnnotationId = null;
       freeText.value = '';
       undoStack = [];
       hideUndoToast();
