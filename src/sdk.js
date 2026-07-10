@@ -15,6 +15,8 @@
   let annotationRenderFrame = null;
   let ignoreNextClick = false;
   let commentPopupEl = null;
+  let textContextMenuEl = null;
+  let quickCommentBtnEl = null;
 
   // ── CSS path ───────────────────────────────────────────────────────────────
   function cssPath(el) {
@@ -84,13 +86,33 @@
     }
   }
 
+  function clearTextContextMenu(clearHighlight = false) {
+    if (textContextMenuEl) {
+      textContextMenuEl.remove();
+      textContextMenuEl = null;
+    }
+    if (clearHighlight) {
+      clearHighlights();
+    }
+  }
+
+  function clearQuickCommentButton(clearHighlight = false) {
+    if (quickCommentBtnEl) {
+      quickCommentBtnEl.remove();
+      quickCommentBtnEl = null;
+    }
+    if (clearHighlight) {
+      clearHighlights();
+    }
+  }
+
   function highlightTextRange(range) {
     const overlay = ensureOverlay();
     clearHighlights();
     for (const rect of range.getClientRects()) {
       if (rect.width <= 0 || rect.height <= 0) continue;
       const m = document.createElement('div');
-      m.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:rgba(79,142,247,.25);border-radius:2px;box-shadow:0 0 0 1.5px rgba(79,142,247,.55);pointer-events:none;`;
+      m.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:rgba(44,214,199,.28);border-radius:2px;box-shadow:0 0 0 1.5px rgba(26,176,162,.65);pointer-events:none;`;
       overlay.appendChild(m);
     }
   }
@@ -161,6 +183,171 @@
     range.setStart(from.node, from.offset);
     range.setEnd(to.node, to.offset);
     return range;
+  }
+
+  function extractSelectedTextData() {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return null;
+    const rawText = sel.toString();
+    const text = rawText.trim();
+    if (!text) return null;
+    const range = sel.getRangeAt(0);
+    const anchorEl = range.commonAncestorContainer.nodeType === 3
+      ? range.commonAncestorContainer.parentElement
+      : range.commonAncestorContainer;
+    if (!anchorEl || isAnnotronEl(anchorEl)) return null;
+    const anchorRect = range.getBoundingClientRect();
+    const clonedRange = range.cloneRange();
+    const selector = cssPath(anchorEl);
+    const rawStart = textOffsetWithin(anchorEl, range.startContainer, range.startOffset);
+    const textStart = rawStart === null ? null : rawStart + rawText.indexOf(text);
+    const textEnd = textStart === null ? null : textStart + text.length;
+    const anchorText = anchorEl.textContent || '';
+    const textPrefix = textStart === null ? '' : anchorText.slice(Math.max(0, textStart - 24), textStart);
+    const textSuffix = textEnd === null ? '' : anchorText.slice(textEnd, textEnd + 24);
+    const label = `"${text.slice(0, 60)}"`;
+    return {
+      selector,
+      text,
+      label,
+      textStart,
+      textEnd,
+      textPrefix,
+      textSuffix,
+      range: clonedRange,
+      anchorRect,
+    };
+  }
+
+  function openTextCommentCard(selected) {
+    if (!selected) return;
+    showCard({
+      heading: 'Text: ' + selected.text.slice(0, 50) + (selected.text.length > 50 ? '…' : ''),
+      placeholder: 'What should change about this text?',
+      anchorRect: selected.anchorRect,
+      onAdd: note => {
+        window.parent.postMessage({
+          [TAG]: true,
+          type: 'text-selected',
+          selector: selected.selector,
+          text: selected.text,
+          label: selected.label,
+          note,
+          textStart: selected.textStart,
+          textEnd: selected.textEnd,
+          textPrefix: selected.textPrefix,
+          textSuffix: selected.textSuffix,
+        }, '*');
+      },
+    });
+  }
+
+  function showQuickCommentButton(selected) {
+    clearQuickCommentButton();
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('data-annotron-ui', 'quick-comment-button');
+    btn.setAttribute('aria-label', 'Add comment to selected text');
+    btn.title = 'Comment on selected text';
+    btn.textContent = '💬';
+    btn.style.cssText = [
+      'position:fixed',
+      'z-index:2147483647',
+      'width:26px',
+      'height:26px',
+      'border:1px solid #2f6fd5',
+      'border-radius:7px 7px 7px 0',
+      'background:#4f8ef7',
+      'color:#fff',
+      'padding:0',
+      'font:14px/1 system-ui,-apple-system,sans-serif',
+      'display:grid',
+      'place-items:center',
+      'cursor:pointer',
+      'box-shadow:0 3px 10px rgba(0,0,0,.35)',
+      'pointer-events:auto',
+    ].join(';');
+
+    const rect = selected.anchorRect;
+    const left = Math.max(8, Math.min(window.innerWidth - 34, rect.right + 6));
+    const top = Math.max(8, Math.min(window.innerHeight - 34, rect.top - 8));
+    btn.style.left = `${left}px`;
+    btn.style.top = `${top}px`;
+
+    const activate = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      ignoreNextClick = true;
+      clearTextContextMenu();
+      clearQuickCommentButton();
+      openTextCommentCard(selected);
+    };
+
+    // Use pointerdown so selectionchange doesn't remove the button before click fires.
+    btn.addEventListener('pointerdown', activate);
+    btn.addEventListener('click', activate);
+    btn.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        activate(e);
+      }
+    });
+
+    document.documentElement.appendChild(btn);
+    quickCommentBtnEl = btn;
+  }
+
+  function showTextContextMenu(x, y, onComment) {
+    clearTextContextMenu();
+    const menu = document.createElement('div');
+    menu.setAttribute('data-annotron-ui', 'text-context-menu');
+    menu.setAttribute('role', 'menu');
+    menu.style.cssText = [
+      'position:fixed',
+      'z-index:2147483647',
+      'min-width:140px',
+      'background:#25262b',
+      'color:#c9cdd4',
+      'border:1px solid #4f8ef7',
+      'border-radius:8px',
+      'padding:6px',
+      'box-shadow:0 12px 36px rgba(0,0,0,.45)',
+      'pointer-events:auto',
+    ].join(';');
+
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.textContent = 'Comment';
+    item.setAttribute('role', 'menuitem');
+    item.style.cssText = [
+      'width:100%',
+      'text-align:left',
+      'border:0',
+      'border-radius:6px',
+      'padding:6px 10px',
+      'background:#25262b',
+      'color:#c9cdd4',
+      'cursor:pointer',
+      'font:600 12px system-ui,-apple-system,sans-serif',
+    ].join(';');
+    item.addEventListener('mouseenter', () => { item.style.background = '#373a40'; });
+    item.addEventListener('mouseleave', () => { item.style.background = '#25262b'; });
+    item.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      clearTextContextMenu();
+      onComment();
+    });
+
+    menu.appendChild(item);
+    document.documentElement.appendChild(menu);
+    textContextMenuEl = menu;
+
+    const bounds = menu.getBoundingClientRect();
+    const left = Math.max(8, Math.min(window.innerWidth - bounds.width - 8, x));
+    const top = Math.max(8, Math.min(window.innerHeight - bounds.height - 8, y));
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    setTimeout(() => item.focus(), 0);
   }
 
   function makeSnippet(text, max = 140) {
@@ -309,7 +496,7 @@
         const mark = document.createElement('div');
         const selected = annotation.id === selectedAnnotationId;
         mark.style.cssText = annotation.kind === 'text'
-          ? `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:rgba(255,202,40,${selected ? '.46' : '.28'});border-bottom:2px solid rgba(224,151,0,${selected ? '.95' : '.65'});border-radius:2px;`
+          ? `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:${selected ? 'rgba(77,143,255,.35)' : 'rgba(255,202,40,.34)'};border-bottom:2px solid ${selected ? 'rgba(43,106,214,.92)' : 'rgba(224,151,0,.85)'};border-radius:2px;`
           : `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;outline:${selected ? 3 : 2}px solid rgba(79,142,247,${selected ? '.95' : '.6'});outline-offset:2px;border-radius:2px;`;
         overlay.appendChild(mark);
       }
@@ -351,6 +538,8 @@
   function dismissCard() {
     clearCard();
     clearHighlights();
+    clearTextContextMenu();
+    clearQuickCommentButton();
     clearCommentPopup();
     if (hovered) {
       hovered.style.outline = '';
@@ -434,6 +623,73 @@
     hovered = null;
   }, true);
 
+  document.addEventListener('contextmenu', e => {
+    if (isAnnotronEl(e.target) || isInteractive(e.target)) return;
+    const selected = extractSelectedTextData();
+    if (!selected) {
+      clearTextContextMenu(true);
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    highlightTextRange(selected.range);
+    clearQuickCommentButton();
+    ignoreNextClick = true;
+
+    showTextContextMenu(e.clientX, e.clientY, () => {
+      openTextCommentCard(selected);
+    });
+  }, true);
+
+  function maybeShowQuickComment() {
+    if (annotating) return;
+    if (textContextMenuEl || cardEl || commentPopupEl) return;
+    const selected = extractSelectedTextData();
+    if (!selected) {
+      clearQuickCommentButton(true);
+      return;
+    }
+    highlightTextRange(selected.range);
+    showQuickCommentButton(selected);
+  }
+
+  document.addEventListener('mouseup', () => {
+    maybeShowQuickComment();
+  }, true);
+
+  document.addEventListener('selectionchange', () => {
+    maybeShowQuickComment();
+  }, true);
+
+  document.addEventListener('keyup', e => {
+    if (e.key === 'Shift' || e.key.startsWith('Arrow') || e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown') {
+      maybeShowQuickComment();
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+      maybeShowQuickComment();
+    }
+  }, true);
+
+  document.addEventListener('click', e => {
+    if (textContextMenuEl && !isAnnotronEl(e.target)) {
+      clearTextContextMenu(true);
+    }
+    if (quickCommentBtnEl && !isAnnotronEl(e.target)) {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) {
+        clearQuickCommentButton(true);
+      }
+    }
+  }, true);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      clearTextContextMenu(true);
+      clearQuickCommentButton(true);
+    }
+  }, true);
+
   // ── Text selection ─────────────────────────────────────────────────────────
   document.addEventListener('mouseup', e => {
     console.log('[annotron-sdk] mouseup', 'annotating:', annotating, 'target:', e.target?.tagName);
@@ -463,20 +719,11 @@
 
     ignoreNextClick = true;
     dismissCard();
+    clearQuickCommentButton();
     highlightTextRange(clonedRange);
     sel.removeAllRanges();
 
-    showCard({
-      heading: 'Text: ' + text.slice(0, 50) + (text.length > 50 ? '…' : ''),
-      placeholder: 'What should change about this text?',
-      anchorRect,
-      onAdd: note => {
-        window.parent.postMessage({
-          [TAG]: true, type: 'text-selected', selector, text, label, note,
-          textStart, textEnd, textPrefix, textSuffix,
-        }, '*');
-      },
-    });
+    openTextCommentCard({ selector, text, label, anchorRect, textStart, textEnd, textPrefix, textSuffix });
   }, true);
 
   // ── Element click ──────────────────────────────────────────────────────────
