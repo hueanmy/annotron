@@ -31,13 +31,31 @@ When the user wants to review or refine an HTML artifact you produced:
 
 2. **Wait for feedback**: run `annotron poll <path>`.
    This blocks until the user sends feedback. Output is JSON with:
-   - `items[]` — each has `kind` (element | text), `selector`, `text`, `note`
+   - `items[]` — each has `kind` (element | text), `selector`, `text`, `note`, and an
+     optional `images[]` (images attached to that specific annotation's note/reply box)
    - `message` — freeform message from the user
+   - `images[]` — top-level images attached to the composer message (or a single annotation reply)
+   - Every image (top-level or per-item) has `name` and `path` (an absolute file path).
+     `Read` each `path` to see the image before applying the feedback.
    - `finalized: true` — signals the user is done; skip to step 5
 
 3. **Apply the feedback**: edit the HTML file using the selector/text + note from each item.
    Each item in `items[]` now includes a server-assigned `id` field (e.g. `ann_xxx`) you can
    use to reply to a specific annotation thread.
+
+   **Show your steps** as you work so the user can follow along like a CLI. Before each
+   significant action, post a short progress step:
+   `annotron progress <path> "Reading server.js"` · `annotron progress <path> "Updating the hero heading"`.
+   Each step appears live in the browser sidebar (the previous step is checked off as done).
+
+   **Cancellation is enforced automatically.** annotron ships a `PreToolUse` hook: if the user
+   clicks **Cancel** while you are mid-round, your next tool call (Edit/Write/Read/Bash, except
+   `annotron` commands) is denied with a message telling you to stop. When you see that denial,
+   do not retry other edits — reply with what you did and did not finish
+   (`annotron poll <path> --reply "Stopped — cancelled. Applied X, skipped Y."`) and wait for the
+   next feedback. The cancel flag resets automatically when the user sends new feedback.
+   (You can also proactively `annotron check <path>` between steps; it prints `{"cancelled":true}`
+   — but the hook makes this optional.)
 
 4. **Tell the user what changed**: run `annotron poll <path> --reply "..."`.
    This posts an agent message to the general conversation log, then re-arms the poll.
@@ -56,4 +74,7 @@ When the user wants to review or refine an HTML artifact you produced:
 - Keep replies short and action-focused ("Updated h1 colour, fixed revenue figure, added footer.").
 - Never edit the file while a poll is in flight — wait for the feedback JSON first.
 - Annotations are persisted automatically in `<artifact>.annotron.json` beside the HTML file.
+- Pasted/uploaded images are saved to `.annotron-uploads/` beside the artifact; feedback references them by absolute `path` — `Read` those paths to view the images.
+- Post progress liberally with `annotron progress <file> "…"` — one short line per step. Keep it action-focused ("Reading X", "Updating Y").
+- `annotron check <file>` is cheap; run it between edits so a mid-flight cancel is honored quickly.
 - To reply to a specific annotation thread: `annotron poll <file> --reply "msg" --annotation-id <id>` — the browser shows the reply inline in that annotation's thread.

@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.0] - 2026-07-10
+
+### Added
+- **Image attachments everywhere** (issue #2): paste an image directly into the message box — or into any annotation's **reply** box or a pending annotation's **note** box — or click 🖼️ to upload files. Thumbnails preview with per-image remove. On send, images are saved to `.annotron-uploads/` beside the artifact and their absolute paths are included in the feedback so the agent can `Read` them. Per-annotation images ride along in that item's `images[]`; composer images are top-level.
+- **Copy agent messages** (issue #2): agent replies in the conversation log and in annotation threads now have a small **Copy** button. (Artifact text remains selectable/copyable with Annotate mode off.)
+- **Live step log** (issue #2): instead of a bare "Agent …" indicator, the agent's actual steps stream into the sidebar like a CLI. Each step shows with a `›` marker and is checked off (`✓`) as the next one starts.
+- **Cancel current work** (issue #2): a **Cancel** button appears while the agent is working. Clicking it requests cancellation — the agent stops and reports what it did/didn't finish.
+- **Automatic cancel enforcement via a bundled `PreToolUse` hook** (issue #2): the plugin now ships `hooks/hooks.json` + `hooks/annotron-cancel-check.sh`, active on install with no per-project setup. When a review is cancelled, the agent's next tool call (Edit/Write/Read/Bash — except `annotron` commands, which stay allowed so it can report back) is denied, so it stops at the next tool boundary without relying on it to poll. The hook is a no-op (fails fast, ~19ms) when the server isn't running.
+- **`GET /cancel-check`**: fileless endpoint the hook queries — returns `{cancelled:true, file}` only when some session is both actively working and cancelled. Server now tracks a per-session `working` flag (set when a poll hands the agent a round, cleared on reply/finalize).
+- **`POST /upload`**: accepts a base64 image data URL for a registered file, writes it to `.annotron-uploads/`, and returns the saved path (20MB limit).
+- **`POST /agent-progress`**: broadcasts an `agent-progress` SSE event carrying a step string.
+- **`POST /cancel` and `GET /cancelled`**: request/query cooperative cancellation for a session.
+- **`annotron progress <file> "step"`**: CLI command for the agent to post a live progress step.
+- **`annotron check <file>`**: CLI command that prints `{"cancelled":true|false}` so the agent can honor a mid-flight cancel.
+
+### Changed
+- Feedback payload now includes an `images[]` array (`{name, path}`); the skill instructs the agent to `Read` each path.
+- The `agent-thinking` indicator now drives a persistent "working" bubble that hosts the step log and is dismissed on `agent-reply` or `agent-cancelled`.
+- SSE reconnect no longer wipes the working indicator, so steps survive brief drops.
+
 ## [0.4.0] - 2026-06-30
 
 ### Added
