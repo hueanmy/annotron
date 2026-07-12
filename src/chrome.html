@@ -158,7 +158,8 @@
   .thread-msg .tmsg-body { color: var(--text); white-space: pre-wrap; word-break: break-word; }
 
   /* Reply input area */
-  .ann-reply { padding: 6px 8px; border-top: 1px solid var(--border); display: flex; gap: 4px; }
+  .ann-reply { padding: 6px 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+  .ann-reply-row { display: flex; gap: 4px; }
   .ann-reply textarea { flex: 1; background: var(--input-bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 12px; padding: 4px 6px; resize: none; height: 32px; font-family: inherit; overflow: hidden; }
   .ann-reply textarea:focus { outline: none; border-color: var(--accent); }
   .ann-reply textarea:hover { height: auto; min-height: 32px; overflow: auto; }
@@ -202,8 +203,40 @@
   #composer textarea { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 13px; padding: 8px 10px; resize: vertical; min-height: 56px; font-family: inherit; }
   #composer textarea:focus { outline: none; border-color: var(--accent); }
   #composer textarea::placeholder { color: var(--text-dim); }
-  #btn-send { background: var(--accent); color: #fff; width: 100%; padding: 8px; font-size: 13px; }
+  #composer-actions { display: flex; gap: 6px; align-items: stretch; }
+  #btn-send { background: var(--accent); color: #fff; flex: 1; padding: 8px; font-size: 13px; }
   #btn-send:hover:not(:disabled) { background: var(--accent-hover); }
+  #btn-attach { flex-shrink: 0; padding: 8px 10px; font-size: 13px; }
+  #btn-cancel-agent { background: var(--danger); color: #fff; flex-shrink: 0; padding: 8px 12px; font-size: 13px; }
+  #btn-cancel-agent:hover:not(:disabled) { background: var(--danger-hover); }
+
+  /* Attached image previews */
+  .attach-previews { display: flex; flex-wrap: wrap; gap: 6px; }
+  .attach-previews:empty { display: none; }
+  .attach-thumb { position: relative; width: 56px; height: 56px; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; background: var(--input-bg); flex-shrink: 0; }
+  .attach-previews.mini .attach-thumb { width: 40px; height: 40px; }
+  .attach-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .attach-thumb .attach-remove { position: absolute; top: 1px; right: 1px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff; font-size: 13px; line-height: 16px; padding: 0; text-align: center; }
+  .attach-thumb .attach-remove:hover { background: var(--danger); }
+
+  /* Inline mini attach button (annotation reply/note) */
+  .mini-attach { background: var(--btn-neutral); color: var(--text); padding: 4px 7px; font-size: 12px; align-self: flex-end; flex-shrink: 0; }
+  .mini-attach:hover { background: var(--btn-neutral-hover); }
+
+  /* Copy button on agent messages */
+  .msg-copy { background: none; color: var(--text-dim); font-size: 10px; padding: 1px 6px; margin-top: 4px; border: 1px solid var(--border); border-radius: 4px; }
+  .msg-copy:hover { color: var(--text); background: var(--btn-neutral); }
+  .tmsg-copy { background: none; color: var(--text-dim); font-size: 10px; padding: 0 5px; margin-top: 3px; border: 1px solid var(--border); border-radius: 4px; align-self: flex-start; }
+  .tmsg-copy:hover { color: var(--text); background: var(--btn-neutral); }
+
+  /* Agent working: live step log */
+  .work-steps { display: flex; flex-direction: column; gap: 2px; margin: 2px 0; }
+  .work-step { font-size: 11px; color: var(--text); line-height: 1.4; display: flex; gap: 5px; align-items: baseline; opacity: 0.9; }
+  .work-step::before { content: '›'; color: var(--agent-msg-label); flex-shrink: 0; }
+  .work-step.done { color: var(--text-dim); }
+  .work-step.done::before { content: '✓'; color: var(--green); }
+  .msg.cancelled { opacity: 0.7; }
+  .msg.cancelled .msg-label { color: var(--orange); }
 
   #shortcut-hints { padding: 4px 10px 6px; display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
   .hint { font-size: 10px; color: var(--text-dim); display: flex; align-items: center; gap: 3px; }
@@ -258,8 +291,14 @@
     </div>
 
     <div id="composer">
-      <textarea id="free-text" placeholder="Message to agent… (Enter to send, Shift+Enter for newline)" rows="3"></textarea>
-      <button id="btn-send" title="Send feedback (Enter)">Send feedback</button>
+      <div id="attach-previews" class="attach-previews"></div>
+      <textarea id="free-text" placeholder="Message to agent… (Enter to send, Shift+Enter for newline, paste an image to attach)" rows="3"></textarea>
+      <div id="composer-actions">
+        <button id="btn-attach" class="btn-neutral" title="Attach image(s) from your computer">🖼️ Image</button>
+        <button id="btn-send" title="Send feedback (Enter)">Send feedback</button>
+        <button id="btn-cancel-agent" title="Cancel current agent work" style="display:none">Cancel</button>
+      </div>
+      <input type="file" id="file-input" accept="image/*" multiple hidden>
     </div>
     <div id="shortcut-hints">
       <span class="hint"><kbd>A</kbd> Annotate</span>
@@ -304,6 +343,10 @@ const btnAnnotate = document.getElementById('btn-annotate');
 const btnDownload = document.getElementById('btn-download');
 const btnFinalize = document.getElementById('btn-finalize');
 const btnSend     = document.getElementById('btn-send');
+const btnAttach   = document.getElementById('btn-attach');
+const btnCancel   = document.getElementById('btn-cancel-agent');
+const fileInput   = document.getElementById('file-input');
+const attachPreviews = document.getElementById('attach-previews');
 const btnTheme    = document.getElementById('btn-theme');
 const btnHelp     = document.getElementById('btn-help');
 const statusDot   = document.getElementById('status-dot');
@@ -329,6 +372,13 @@ let serializeResolvers = {};
 let serializeCounter = 0;
 let undoStack = [];
 let undoTimer = null;
+let agentWorking = false;
+
+// Image staging (runtime only — never persisted to the sidecar).
+// Each entry is an array of { id, name, dataUrl }.
+const composerImages = [];       // main composer
+const replyImgStore = {};        // saved-annotation id -> images staged in its reply box
+const noteImgStore = {};         // pending-new id -> images staged in its note box
 
 // annotations: array of saved annotation objects (with threads)
 // Each: { id, kind, selector, label, text, thread: [{role,message,timestamp}], createdAt, status }
@@ -536,6 +586,7 @@ function buildAnnotationCard(ann, isPending) {
         body.className = 'tmsg-body';
         body.textContent = msg.message;
         m.append(who, body);
+        if (msg.role === 'agent') m.append(makeCopyBtn(msg.message, 'tmsg-copy'));
         thread.appendChild(m);
       });
       card.appendChild(thread);
@@ -544,8 +595,25 @@ function buildAnnotationCard(ann, isPending) {
     // Reply input always shown for saved annotations
     const replyArea = document.createElement('div');
     replyArea.className = 'ann-reply';
+
+    const replyPreviews = document.createElement('div');
+    replyPreviews.className = 'attach-previews mini';
+    const replyStore = (replyImgStore[ann.id] = replyImgStore[ann.id] || []);
+    const replyAttach = createImageAttach(replyPreviews, replyStore);
+
+    const replyRow = document.createElement('div');
+    replyRow.className = 'ann-reply-row';
+    const replyImgBtn = document.createElement('button');
+    replyImgBtn.className = 'mini-attach';
+    replyImgBtn.textContent = '🖼️';
+    replyImgBtn.title = 'Attach image (or paste into the box)';
+    const replyInput = document.createElement('input');
+    replyInput.type = 'file'; replyInput.accept = 'image/*'; replyInput.multiple = true; replyInput.hidden = true;
+    replyImgBtn.addEventListener('click', () => replyInput.click());
+    replyInput.addEventListener('change', () => { for (const f of replyInput.files) replyAttach.add(f); replyInput.value = ''; });
     const replyTa = document.createElement('textarea');
     replyTa.placeholder = 'Reply to agent…';
+    replyTa.addEventListener('paste', (e) => replyAttach.handlePaste(e));
     const replySend = document.createElement('button');
     replySend.className = 'ann-reply-send';
     replySend.textContent = 'Send';
@@ -556,7 +624,8 @@ function buildAnnotationCard(ann, isPending) {
         sendAnnotationReply(ann, replyTa);
       }
     });
-    replyArea.append(replyTa, replySend);
+    replyRow.append(replyImgBtn, replyTa, replySend, replyInput);
+    replyArea.append(replyPreviews, replyRow);
     card.appendChild(replyArea);
   }
 
@@ -564,11 +633,31 @@ function buildAnnotationCard(ann, isPending) {
   if (isPending) {
     const noteArea = document.createElement('div');
     noteArea.className = 'ann-note';
+
+    const notePreviews = document.createElement('div');
+    notePreviews.className = 'attach-previews mini';
+    const noteStore = (noteImgStore[ann.id] = noteImgStore[ann.id] || []);
+    const noteAttach = createImageAttach(notePreviews, noteStore);
+
     const ta = document.createElement('textarea');
-    ta.placeholder = 'Add a note for the agent…';
+    ta.placeholder = 'Add a note for the agent… (paste an image to attach)';
     ta.value = ann.note || '';
     ta.addEventListener('input', () => { ann.note = ta.value; });
-    noteArea.appendChild(ta);
+    ta.addEventListener('paste', (e) => noteAttach.handlePaste(e));
+
+    const noteBar = document.createElement('div');
+    noteBar.style.cssText = 'display:flex;gap:4px;margin-top:4px;';
+    const noteImgBtn = document.createElement('button');
+    noteImgBtn.className = 'mini-attach';
+    noteImgBtn.textContent = '🖼️ Image';
+    noteImgBtn.title = 'Attach image';
+    const noteInput = document.createElement('input');
+    noteInput.type = 'file'; noteInput.accept = 'image/*'; noteInput.multiple = true; noteInput.hidden = true;
+    noteImgBtn.addEventListener('click', () => noteInput.click());
+    noteInput.addEventListener('change', () => { for (const f of noteInput.files) noteAttach.add(f); noteInput.value = ''; });
+    noteBar.append(noteImgBtn, noteInput);
+
+    noteArea.append(notePreviews, ta, noteBar);
     card.appendChild(noteArea);
   }
 
@@ -578,15 +667,20 @@ function buildAnnotationCard(ann, isPending) {
 // Send a reply to a specific saved annotation
 async function sendAnnotationReply(ann, textarea) {
   const note = textarea.value.trim();
-  if (!note) return;
+  const staged = replyImgStore[ann.id] || [];
+  if (!note && !staged.length) return;
   textarea.disabled = true;
 
   try {
+    // Upload staged reply images first (before the re-render tears down state)
+    const images = await uploadImages(staged);
+
     // Add to local thread immediately
     ann.thread = ann.thread || [];
-    ann.thread.push({ role: 'human', message: note, timestamp: new Date().toISOString() });
+    const shown = note || `(${images.length} image${images.length !== 1 ? 's' : ''} attached)`;
+    ann.thread.push({ role: 'human', message: shown, timestamp: new Date().toISOString() });
+    delete replyImgStore[ann.id];
     renderAnnotations();
-    textarea.value = '';
 
     // Send to server as feedback targeting this annotation
     await fetch('/feedback', {
@@ -596,8 +690,10 @@ async function sendAnnotationReply(ann, textarea) {
         file,
         items: [{ id: ann.id, kind: ann.kind, selector: ann.selector, label: ann.label, text: ann.text, note }],
         message: '',
+        images,
       }),
     });
+    setAgentWorking(true);
   } finally {
     textarea.disabled = false;
   }
@@ -684,44 +780,239 @@ function undoRemove() {
 }
 btnUndo.addEventListener('click', undoRemove);
 
+// ── Image attachments (reusable) ────────────────────────────────────────────
+function fileToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+// Upload staged images ([{name,dataUrl}]) to the server; returns [{name, path}].
+async function uploadImages(imgs) {
+  const out = [];
+  for (const img of imgs) {
+    try {
+      const res = await fetch('/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file, name: img.name, dataUrl: img.dataUrl }),
+      });
+      if (res.ok) { const d = await res.json(); out.push({ name: d.name, path: d.path }); }
+    } catch {}
+  }
+  return out;
+}
+
+// Bind an image-attach controller to a preview element, backed by `imgs`
+// (an array that persists across re-renders so staged images survive).
+// Mutates `imgs` in place — never reassigns — so the backing reference holds.
+function createImageAttach(previewEl, imgs) {
+  function render() {
+    previewEl.innerHTML = '';
+    imgs.forEach(img => {
+      const thumb = document.createElement('div');
+      thumb.className = 'attach-thumb';
+      thumb.title = img.name;
+      const im = document.createElement('img');
+      im.src = img.dataUrl; im.alt = img.name;
+      const rm = document.createElement('button');
+      rm.className = 'attach-remove';
+      rm.textContent = '×'; rm.title = 'Remove image';
+      rm.addEventListener('click', () => {
+        const i = imgs.indexOf(img);
+        if (i >= 0) imgs.splice(i, 1);
+        render();
+      });
+      thumb.append(im, rm);
+      previewEl.appendChild(thumb);
+    });
+  }
+  async function add(blob) {
+    if (!blob || !blob.type || !blob.type.startsWith('image/')) return;
+    const dataUrl = await fileToDataUrl(blob);
+    imgs.push({
+      id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      name: blob.name || ('pasted.' + (blob.type.split('/')[1] || 'png')),
+      dataUrl,
+    });
+    render();
+  }
+  function handlePaste(e) {
+    const items = e.clipboardData?.items || [];
+    let handled = false;
+    for (const it of items) {
+      if (it.type && it.type.startsWith('image/')) {
+        const blob = it.getAsFile();
+        if (blob) { add(blob); handled = true; }
+      }
+    }
+    if (handled) e.preventDefault();
+  }
+  render();
+  return {
+    add, handlePaste, render,
+    upload: () => uploadImages(imgs),
+    clear() { imgs.length = 0; render(); },
+    count: () => imgs.length,
+  };
+}
+
+// Main composer attach
+const composerAttach = createImageAttach(attachPreviews, composerImages);
+btnAttach.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  for (const f of fileInput.files) composerAttach.add(f);
+  fileInput.value = '';
+});
+freeText.addEventListener('paste', (e) => composerAttach.handlePaste(e));
+
+// ── Agent working state (step log + cancel) ─────────────────────────────────
+function setAgentWorking(on) {
+  agentWorking = on;
+  btnCancel.style.display = on ? '' : 'none';
+  btnCancel.disabled = false;
+  btnSend.disabled = on;
+}
+
+function showWorking() {
+  let el = convoEl.querySelector('[data-working]');
+  if (el) return el;
+  el = document.createElement('div');
+  el.className = 'msg agent';
+  el.setAttribute('data-working', '1');
+  const lbl = document.createElement('div');
+  lbl.className = 'msg-label';
+  lbl.textContent = 'Agent';
+  const steps = document.createElement('div');
+  steps.className = 'work-steps';
+  const dots = document.createElement('div');
+  dots.className = 'thinking-dots';
+  dots.innerHTML = '<span></span><span></span><span></span>';
+  el.append(lbl, steps, dots);
+  convoEl.appendChild(el);
+  convoEl.scrollTop = convoEl.scrollHeight;
+  annList.scrollTop = annList.scrollHeight;
+  return el;
+}
+
+function addWorkStep(step, done) {
+  if (!step) return;
+  const el = showWorking();
+  const steps = el.querySelector('.work-steps');
+  // Mark the previously running step as done when a new one arrives
+  const prev = steps.querySelector('.work-step:not(.done)');
+  if (prev) prev.classList.add('done');
+  const line = document.createElement('div');
+  line.className = 'work-step' + (done ? ' done' : '');
+  line.textContent = step;
+  steps.appendChild(line);
+  convoEl.scrollTop = convoEl.scrollHeight;
+  annList.scrollTop = annList.scrollHeight;
+}
+
+function hideWorking() {
+  convoEl.querySelectorAll('[data-working]').forEach(el => el.remove());
+}
+
+async function cancelAgent() {
+  if (!agentWorking) return;
+  btnCancel.disabled = true;
+  addWorkStep('Cancelling…', false);
+  try {
+    await fetch('/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file }),
+    });
+  } catch {}
+}
+btnCancel.addEventListener('click', cancelAgent);
+
 // ── Send feedback ──────────────────────────────────────────────────────────
 async function sendFeedback() {
-  const items = pendingNew.map(c => ({
-    id: null,  // new annotations get id assigned by server
-    kind: c.kind,
-    selector: c.selector || null,
-    label: c.label || null,
-    text: c.text || null,
-    note: c.note || null,
-  }));
   const message = freeText.value.trim();
-  if (!items.length && !message) return;
+  const composerImgCount = composerAttach.count();
+  const noteImgCount = pendingNew.reduce((n, c) => n + (noteImgStore[c.id]?.length || 0), 0);
+  if (!pendingNew.length && !message && !composerImgCount && !noteImgCount) return;
 
   btnSend.disabled = true;
   try {
+    // Upload per-annotation note images and the composer's message images in parallel-ish
+    const items = await Promise.all(pendingNew.map(async c => ({
+      id: null,  // new annotations get id assigned by server
+      kind: c.kind,
+      selector: c.selector || null,
+      label: c.label || null,
+      text: c.text || null,
+      note: c.note || null,
+      images: noteImgStore[c.id] ? await uploadImages(noteImgStore[c.id]) : [],
+    })));
+    const images = await composerAttach.upload();
+    const totalImgs = images.length + items.reduce((n, it) => n + it.images.length, 0);
     const res = await fetch('/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file, items, message }),
+      body: JSON.stringify({ file, items, message, images }),
     });
     if (res.ok) {
-      // Move pending to saved (reload from server to get real ids)
+      // Clear runtime image staging for the items we just sent
+      pendingNew.forEach(c => { delete noteImgStore[c.id]; });
       pendingNew = [];
+      composerAttach.clear();
       freeText.value = '';
       undoStack = [];
       hideUndoToast();
       // Reload sidecar to get server-assigned ids and persisted state
       await loadAnnotations();
-      if (message) addConvoMsg('human', message);
+      if (message || totalImgs) {
+        const suffix = totalImgs ? `  📎 ${totalImgs} image${totalImgs !== 1 ? 's' : ''}` : '';
+        addConvoMsg('human', (message || '(images attached)') + suffix);
+      }
+      setAgentWorking(true);
     }
   } finally {
-    btnSend.disabled = false;
+    if (!agentWorking) btnSend.disabled = false;
   }
 }
 btnSend.addEventListener('click', sendFeedback);
 freeText.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendFeedback(); }
 });
+
+// ── Copy helpers ────────────────────────────────────────────────────────────
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;opacity:0;';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); if (done) done(); } catch {}
+  ta.remove();
+}
+function copyText(text, btn) {
+  const flash = () => {
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = orig; }, 1200);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(flash).catch(() => fallbackCopy(text, flash));
+  } else {
+    fallbackCopy(text, flash);
+  }
+}
+function makeCopyBtn(text, cls) {
+  const b = document.createElement('button');
+  b.className = cls;
+  b.textContent = 'Copy';
+  b.title = 'Copy message';
+  b.addEventListener('click', (e) => { e.stopPropagation(); copyText(text, b); });
+  return b;
+}
 
 // ── Conversation (general agent messages) ──────────────────────────────────
 function addConvoMsg(role, text) {
@@ -733,6 +1024,7 @@ function addConvoMsg(role, text) {
   const body = document.createElement('div');
   body.textContent = text;
   el.append(label, body);
+  if (role === 'agent') el.append(makeCopyBtn(text, 'msg-copy'));
   convoEl.appendChild(el);
   convoEl.scrollTop = convoEl.scrollHeight;
   annList.scrollTop = annList.scrollHeight;
@@ -779,27 +1071,23 @@ function connectSSE() {
     savedScroll = frame.contentWindow?.scrollY || 0;
     loadArtifact();
   });
-  function showThinking() {
-    if (convoEl.querySelector('[data-thinking]')) return;
-    const el = document.createElement('div');
-    el.className = 'msg agent';
-    el.setAttribute('data-thinking', '1');
-    const lbl = document.createElement('div');
-    lbl.className = 'msg-label';
-    lbl.textContent = 'Agent';
-    const dots = document.createElement('div');
-    dots.className = 'thinking-dots';
-    dots.innerHTML = '<span></span><span></span><span></span>';
-    el.append(lbl, dots);
-    convoEl.appendChild(el);
-    convoEl.scrollTop = convoEl.scrollHeight;
-  }
-  function hideThinking() {
-    convoEl.querySelectorAll('[data-thinking]').forEach(el => el.remove());
-  }
-  es.addEventListener('agent-thinking', showThinking);
+  es.addEventListener('agent-thinking', () => { setAgentWorking(true); showWorking(); });
+  es.addEventListener('agent-progress', (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      addWorkStep(d.step, d.done);
+    } catch {}
+  });
+  es.addEventListener('agent-cancelled', () => {
+    hideWorking();
+    setAgentWorking(false);
+    addConvoMsg('agent', '⛔ Cancellation requested — the agent will stop at its next checkpoint.');
+    const last = convoEl.lastElementChild;
+    if (last) last.classList.add('cancelled');
+  });
   es.addEventListener('agent-reply', async (e) => {
-    hideThinking();
+    hideWorking();
+    setAgentWorking(false);
     try {
       const d = JSON.parse(e.data);
       const msg = d.message || e.data;
@@ -814,7 +1102,7 @@ function connectSSE() {
       }
     } catch { addConvoMsg('agent', e.data); }
   });
-  es.onopen = () => { statusDot.classList.add('live'); statusDot.title = 'Live'; hideThinking(); };
+  es.onopen = () => { statusDot.classList.add('live'); statusDot.title = 'Live'; };
   es.onerror = () => {
     statusDot.classList.remove('live');
     statusDot.title = 'Disconnected — reconnecting…';

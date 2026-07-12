@@ -21,6 +21,8 @@ function getSession(file) {
       pollWaiters: [],
       pendingFeedback: null,
       finalized: false,
+      cancelRequested: false,
+      working: false,
     });
   }
   return sessions.get(file);
@@ -223,6 +225,7 @@ async function handler(req, res) {
     const sess = getSession(abs);
     sess.pendingFeedback = body;
     sess.finalized = false;
+    sess.cancelRequested = false;
     broadcastSSE(abs, 'agent-thinking', '{}');
     wakePoll(abs, { feedback: body, finalized: false });
     return send(res, 200, { ok: true });
@@ -239,10 +242,12 @@ async function handler(req, res) {
     if (sess.pendingFeedback) {
       const payload = { feedback: sess.pendingFeedback, finalized: sess.finalized };
       sess.pendingFeedback = null;
+      sess.working = true;  // agent is now processing a round
       return send(res, 200, payload);
     }
     if (sess.finalized) {
       sess.finalized = false;
+      sess.working = false;
       return send(res, 200, { finalized: true });
     }
 
@@ -258,6 +263,8 @@ async function handler(req, res) {
     const payload = await p;
     clearTimeout(timeout);
     sess.pendingFeedback = null;
+    if (payload && payload.feedback) sess.working = true;   // handed a new round to the agent
+    else if (payload && payload.finalized) sess.working = false;
     return send(res, 200, payload);
   }
 
@@ -281,6 +288,8 @@ async function handler(req, res) {
     if (!file || !body.message) return send(res, 400, { error: 'missing file or message' });
     const abs = path.resolve(file);
     if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    // Agent is reporting back → the round is done, it's no longer actively working
+    getSession(abs).working = false;
     // Persist reply into sidecar thread if annotationId given
     if (body.annotationId) {
       const sidecar = readSidecar(abs);
@@ -293,6 +302,71 @@ async function handler(req, res) {
     }
     broadcastSSE(abs, 'agent-reply', JSON.stringify({ message: body.message, annotationId: body.annotationId || null }));
     return send(res, 200, { ok: true });
+  }
+
+  if (pathname === '/upload' && method === 'POST') {
+    const body = await readBody(req);
+    const file = body.file;
+    if (!file || !body.dataUrl) return send(res, 400, { error: 'missing file or dataUrl' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/.exec(body.dataUrl);
+    if (!m) return send(res, 400, { error: 'invalid image data' });
+    const mime = m[1];
+    let buf;
+    try { buf = Buffer.from(m[2], 'base64'); } catch { return send(res, 400, { error: 'invalid base64' }); }
+    const MAX = 20 * 1024 * 1024;
+    if (buf.length > MAX) return send(res, 413, { error: 'image too large (max 20MB)' });
+    const extByMime = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg', 'image/bmp': 'bmp' };
+    const ext = extByMime[mime] || 'png';
+    const dir = path.join(path.dirname(abs), '.annotron-uploads');
+    try { fs.mkdirSync(dir, { recursive: true }); } catch {}
+    const rawName = (body.name || 'image').replace(/\.[^.]*$/, '');
+    const safeBase = rawName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60) || 'image';
+    const fname = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${safeBase}.${ext}`;
+    const dest = path.join(dir, fname);
+    try { fs.writeFileSync(dest, buf); } catch (e) { return send(res, 500, { error: 'write failed: ' + e.message }); }
+    return send(res, 200, { ok: true, path: dest, name: body.name || fname });
+  }
+
+  if (pathname === '/agent-progress' && method === 'POST') {
+    const body = await readBody(req);
+    const file = body.file;
+    if (!file) return send(res, 400, { error: 'missing file' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    broadcastSSE(abs, 'agent-progress', JSON.stringify({ step: body.step || '', done: !!body.done }));
+    return send(res, 200, { ok: true });
+  }
+
+  if (pathname === '/cancel' && method === 'POST') {
+    const body = await readBody(req);
+    const file = body.file;
+    if (!file) return send(res, 400, { error: 'missing file' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    const sess = getSession(abs);
+    sess.cancelRequested = true;
+    broadcastSSE(abs, 'agent-cancelled', '{}');
+    return send(res, 200, { ok: true });
+  }
+
+  if (pathname === '/cancelled' && method === 'GET') {
+    const file = u.searchParams.get('file');
+    if (!file) return send(res, 400, { error: 'missing file' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    const sess = getSession(abs);
+    return send(res, 200, { cancelled: !!sess.cancelRequested });
+  }
+
+  // Fileless check used by the bundled PreToolUse hook: is any in-flight
+  // (actively-working) session currently under a cancel request?
+  if (pathname === '/cancel-check' && method === 'GET') {
+    for (const [f, s] of sessions) {
+      if (s.working && s.cancelRequested) return send(res, 200, { cancelled: true, file: f });
+    }
+    return send(res, 200, { cancelled: false });
   }
 
   if (pathname === '/events' && method === 'GET') {
