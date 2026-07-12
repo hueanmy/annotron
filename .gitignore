@@ -1,0 +1,4 @@
+.ast-graph/
+
+# annotron review artifacts (transient)
+.annotron-uploads/
