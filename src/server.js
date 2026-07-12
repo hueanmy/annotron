@@ -204,6 +204,12 @@ async function handler(req, res) {
           // Add new message to existing thread
           if (!existing.thread) existing.thread = [];
           if (item.note) existing.thread.push({ role: 'human', message: item.note, timestamp: new Date().toISOString() });
+          if (item.kind === 'text') {
+            existing.textStart = Number.isInteger(item.textStart) ? item.textStart : existing.textStart ?? null;
+            existing.textEnd = Number.isInteger(item.textEnd) ? item.textEnd : existing.textEnd ?? null;
+            existing.textPrefix = item.textPrefix || existing.textPrefix || null;
+            existing.textSuffix = item.textSuffix || existing.textSuffix || null;
+          }
         } else {
           // New annotation
           const ann = {
@@ -212,6 +218,10 @@ async function handler(req, res) {
             selector: item.selector || null,
             label: item.label || null,
             text: item.text || null,
+            textStart: Number.isInteger(item.textStart) ? item.textStart : null,
+            textEnd: Number.isInteger(item.textEnd) ? item.textEnd : null,
+            textPrefix: item.textPrefix || null,
+            textSuffix: item.textSuffix || null,
             thread: item.note ? [{ role: 'human', message: item.note, timestamp: new Date().toISOString() }] : [],
             createdAt: new Date().toISOString(),
             status: 'open',
