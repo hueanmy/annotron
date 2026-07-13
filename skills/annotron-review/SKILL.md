@@ -43,10 +43,16 @@ When the user wants to review or refine an HTML artifact you produced:
    Each item in `items[]` now includes a server-assigned `id` field (e.g. `ann_xxx`) you can
    use to reply to a specific annotation thread.
 
-   **Show your steps** as you work so the user can follow along like a CLI. Before each
-   significant action, post a short progress step:
-   `annotron progress <path> "Reading server.js"` · `annotron progress <path> "Updating the hero heading"`.
-   Each step appears live in the browser sidebar (the previous step is checked off as done).
+   **Your steps are mirrored automatically.** A bundled `PostToolUse`/`PreToolUse` hook streams
+   every tool call (Read/Edit/Bash/…) into the browser sidebar as CLI-like steps, and reflects
+   idle/permission status — you do not need to narrate. You may still post a high-level milestone
+   with `annotron progress <path> "…"` if it helps, but it is optional now.
+
+   **Remote permission approval (optional, user-controlled).** If the user turns on *Remote approve*
+   in the browser, the hook routes each tool's permission prompt to the browser; the user clicks
+   Allow / Allow-always / Deny and the decision comes back to the CLI. If a tool is denied you'll get
+   a deny reason — respect it, don't retry the same action. If the browser doesn't answer in time the
+   prompt falls back to the terminal. This is transparent to you; no special commands needed.
 
    **Cancellation is enforced automatically.** annotron ships a `PreToolUse` hook: if the user
    clicks **Cancel** while you are mid-round, your next tool call (Edit/Write/Read/Bash, except

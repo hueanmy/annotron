@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0] - 2026-07-14
+
+### Added
+- **Live CLI activity mirror**: bundled `PostToolUse`/`PreToolUse` hooks stream every tool call (Read/Edit/Write/Bash/Grep/…) into the browser sidebar as CLI-like steps — the reviewer now sees what the agent is doing in real time instead of a bare "Agent …" indicator, with no manual `annotron progress` calls.
+- **Turn-status bar**: a status pill shows `Agent working…` / `Waiting for your feedback` / `Needs your permission`, driven by `Notification` (idle/permission) and `Stop` hooks — fixes the "CLI still running but browser looks idle" confusion.
+- **Remote permission approval**: a *Remote approve* toggle in the browser routes Claude Code permission prompts to the review UI. A `PreToolUse` hook blocks the tool, shows an **Allow / Allow-always / Deny** card in the sidebar, and returns the decision to the CLI. `Allow always` auto-approves that tool for the rest of the session. Falls back to the terminal prompt if the browser doesn't answer within ~170s.
+- **New endpoints**: `POST /hook/pretool` (mirror + cancel + permission gate), `POST /hook/posttool`, `POST /hook/notify`, `POST /hook/stop`, `POST /permission/decision`, `POST /permission/mode`.
+- **Generic bridge hook** `hooks/annotron-hook.sh` (`gate`/`fire` modes) replaces the cancel-only hook; `hooks.json` now wires PreToolUse/PostToolUse/Notification/Stop.
+
+### Changed
+- Cancellation enforcement moved into the consolidated `/hook/pretool` path (still deny-on-next-tool). annotron's own CLI calls are exempted server-side via a precise command match (robust to escaped quotes and to working directories whose path contains "annotron").
+- Server tracks per-session `remoteApprove`, `autoAllowTools`, and pending permission waiters.
+
 ## [0.5.0] - 2026-07-10
 
 ### Added
