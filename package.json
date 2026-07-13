@@ -4,7 +4,7 @@
   "description": "Local, browser-based review editor for agent-generated HTML artifacts — annotate elements and text, send feedback to your AI coding agent, then finalize the result into the file and download it.",
   "type": "module",
   "bin": {
-    "annotron": "./bin/annotron"
+    "annotron": "bin/annotron"
   },
   "files": [
     "bin/",
@@ -15,7 +15,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/hueanmy/annotron"
+    "url": "git+https://github.com/hueanmy/annotron.git"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
