@@ -1,14 +1,26 @@
 {
   "name": "meii-marketplace",
-  "owner": { "name": "Meii" },
+  "owner": {
+    "name": "Meii"
+  },
   "plugins": [
     {
       "name": "annotron",
-      "source": { "source": "github", "repo": "hueanmy/annotron" },
-      "version": "0.5.0",
+      "source": {
+        "source": "github",
+        "repo": "hueanmy/annotron"
+      },
+      "version": "0.6.0",
       "description": "Local review editor for agent-generated HTML artifacts.",
       "category": "productivity",
-      "keywords": ["html", "artifacts", "review", "feedback", "annotation", "ai-agents"]
+      "keywords": [
+        "html",
+        "artifacts",
+        "review",
+        "feedback",
+        "annotation",
+        "ai-agents"
+      ]
     }
   ]
 }

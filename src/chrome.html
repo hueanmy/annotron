@@ -230,6 +230,32 @@
   .tmsg-copy { background: none; color: var(--text-dim); font-size: 10px; padding: 0 5px; margin-top: 3px; border: 1px solid var(--border); border-radius: 4px; align-self: flex-start; }
   .tmsg-copy:hover { color: var(--text); background: var(--btn-neutral); }
 
+  /* Agent status bar */
+  #agent-statusbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-top: 1px solid var(--border); background: var(--bar-bg); flex-shrink: 0; font-size: 12px; }
+  #agent-status { display: flex; align-items: center; gap: 6px; color: var(--text-dim); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .status-dot-sm { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+  #agent-status.working .status-dot-sm { background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+  #agent-status.idle .status-dot-sm { background: var(--green); }
+  #agent-status.needs-perm .status-dot-sm { background: var(--orange); }
+  #agent-status.needs-perm { color: var(--orange); font-weight: 600; }
+  @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+  #remote-approve-wrap { display: flex; align-items: center; gap: 5px; color: var(--text-dim); cursor: pointer; flex-shrink: 0; user-select: none; }
+  #remote-approve-wrap:hover { color: var(--text); }
+  #remote-approve { cursor: pointer; }
+
+  /* Permission request cards */
+  #perm-requests { display: flex; flex-direction: column; gap: 6px; padding: 0 8px; flex-shrink: 0; }
+  #perm-requests:empty { display: none; }
+  .perm-card { border: 1px solid var(--orange); border-left: 3px solid var(--orange); border-radius: var(--radius); background: var(--card-bg); padding: 10px; font-size: 12px; animation: card-in 0.15s ease; }
+  .perm-card .perm-head { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--orange); margin-bottom: 4px; }
+  .perm-card .perm-tool { color: var(--text); font-family: monospace; word-break: break-word; margin-bottom: 8px; }
+  .perm-card .perm-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .perm-card button { font-size: 11px; padding: 5px 10px; }
+  .perm-allow { background: var(--green); color: #fff; }
+  .perm-always { background: var(--btn-neutral); color: var(--text); }
+  .perm-always:hover { background: var(--btn-neutral-hover); }
+  .perm-deny { background: var(--danger); color: #fff; }
+
   /* Agent working: live step log */
   .work-steps { display: flex; flex-direction: column; gap: 2px; margin: 2px 0; }
   .work-step { font-size: 11px; color: var(--text); line-height: 1.4; display: flex; gap: 5px; align-items: baseline; opacity: 0.9; }
@@ -291,6 +317,15 @@
       </div>
     </div>
 
+    <div id="perm-requests"></div>
+
+    <div id="agent-statusbar">
+      <span id="agent-status"><span class="status-dot-sm"></span><span id="agent-status-text">Idle</span></span>
+      <label id="remote-approve-wrap" title="Approve tool permissions from this browser instead of the terminal">
+        <input type="checkbox" id="remote-approve"> Remote approve
+      </label>
+    </div>
+
     <div id="composer">
       <div id="attach-previews" class="attach-previews"></div>
       <textarea id="free-text" placeholder="Message to agent… (Enter to send, Shift+Enter for newline, paste an image to attach)" rows="3"></textarea>
@@ -348,6 +383,10 @@ const btnAttach   = document.getElementById('btn-attach');
 const btnCancel   = document.getElementById('btn-cancel-agent');
 const fileInput   = document.getElementById('file-input');
 const attachPreviews = document.getElementById('attach-previews');
+const permRequests   = document.getElementById('perm-requests');
+const agentStatusEl  = document.getElementById('agent-status');
+const agentStatusText= document.getElementById('agent-status-text');
+const remoteApprove  = document.getElementById('remote-approve');
 const btnTheme    = document.getElementById('btn-theme');
 const btnHelp     = document.getElementById('btn-help');
 const statusDot   = document.getElementById('status-dot');
@@ -929,6 +968,76 @@ function setAgentWorking(on) {
   btnCancel.style.display = on ? '' : 'none';
   btnCancel.disabled = false;
   btnSend.disabled = on;
+  setStatus(on ? 'working' : 'idle', on ? 'Agent working…' : 'Waiting for your feedback');
+}
+
+// ── Agent status bar ────────────────────────────────────────────────────────
+function setStatus(state, text) {
+  agentStatusEl.classList.remove('working', 'idle', 'needs-perm');
+  agentStatusEl.classList.add(state);
+  agentStatusText.textContent = text;
+}
+
+// ── Remote permission approval ──────────────────────────────────────────────
+remoteApprove.addEventListener('change', () => {
+  fetch('/permission/mode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file, enabled: remoteApprove.checked }),
+  }).catch(() => {});
+});
+
+function renderPermCard({ requestId, tool, summary }) {
+  if (permRequests.querySelector(`[data-req="${requestId}"]`)) return;
+  const card = document.createElement('div');
+  card.className = 'perm-card';
+  card.dataset.req = requestId;
+
+  const head = document.createElement('div');
+  head.className = 'perm-head';
+  head.textContent = '⚠ Permission needed';
+
+  const toolEl = document.createElement('div');
+  toolEl.className = 'perm-tool';
+  toolEl.textContent = summary || tool;
+
+  const actions = document.createElement('div');
+  actions.className = 'perm-actions';
+  const allow = document.createElement('button');
+  allow.className = 'perm-allow'; allow.textContent = 'Allow';
+  const always = document.createElement('button');
+  always.className = 'perm-always'; always.textContent = 'Allow always';
+  always.title = `Allow "${tool}" for the rest of this session without asking`;
+  const deny = document.createElement('button');
+  deny.className = 'perm-deny'; deny.textContent = 'Deny';
+
+  allow.addEventListener('click', () => decidePermission(requestId, 'allow', false));
+  always.addEventListener('click', () => decidePermission(requestId, 'allow', true));
+  deny.addEventListener('click', () => decidePermission(requestId, 'deny', false));
+
+  actions.append(allow, always, deny);
+  card.append(head, toolEl, actions);
+  permRequests.appendChild(card);
+  setStatus('needs-perm', 'Needs your permission');
+}
+
+function removePermCard(requestId) {
+  const card = permRequests.querySelector(`[data-req="${requestId}"]`);
+  if (card) card.remove();
+  if (!permRequests.children.length) {
+    setStatus(agentWorking ? 'working' : 'idle', agentWorking ? 'Agent working…' : 'Waiting for your feedback');
+  }
+}
+
+function decidePermission(requestId, decision, always) {
+  const card = permRequests.querySelector(`[data-req="${requestId}"]`);
+  if (card) card.querySelectorAll('button').forEach(b => b.disabled = true);
+  fetch('/permission/decision', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file, requestId, decision, always }),
+  }).catch(() => {});
+  removePermCard(requestId);
 }
 
 function showWorking() {
@@ -1136,6 +1245,28 @@ function connectSSE() {
       const d = JSON.parse(e.data);
       addWorkStep(d.step, d.done);
     } catch {}
+  });
+  es.addEventListener('agent-progress-done', () => {
+    // mark the last running step as completed
+    const steps = convoEl.querySelector('[data-working] .work-steps');
+    const last = steps && steps.querySelector('.work-step:not(.done)');
+    if (last) last.classList.add('done');
+  });
+  es.addEventListener('agent-status', (e) => {
+    try {
+      const t = JSON.parse(e.data).type || '';
+      if (t === 'permission_prompt') setStatus('needs-perm', 'Needs your permission');
+      else if (t === 'idle' || t === 'idle_prompt') { if (!agentWorking) setStatus('idle', 'Waiting for your feedback'); }
+    } catch {}
+  });
+  es.addEventListener('permission-request', (e) => {
+    try { renderPermCard(JSON.parse(e.data)); } catch {}
+  });
+  es.addEventListener('permission-resolved', (e) => {
+    try { removePermCard(JSON.parse(e.data).requestId); } catch {}
+  });
+  es.addEventListener('permission-mode', (e) => {
+    try { remoteApprove.checked = !!JSON.parse(e.data).enabled; } catch {}
   });
   es.addEventListener('agent-cancelled', () => {
     hideWorking();

@@ -23,6 +23,10 @@ function getSession(file) {
       finalized: false,
       cancelRequested: false,
       working: false,
+      remoteApprove: false,          // route permission prompts to the browser
+      autoAllowTools: new Set(),      // tools the user chose "allow always" for
+      permWaiters: new Map(),         // requestId -> resolve(decisionObj|null)
+      pendingPerms: new Map(),        // requestId -> {tool, summary} (for reconnecting clients)
     });
   }
   return sessions.get(file);
@@ -87,6 +91,66 @@ function wakePoll(file, payload) {
   if (!sess) return;
   for (const resolve of sess.pollWaiters) resolve(payload);
   sess.pollWaiters = [];
+}
+
+// --- Hook helpers ---
+// Correlate an incoming hook event (which only knows cwd) to the annotron
+// session it belongs to. Prefer a session that is actively working; if several,
+// disambiguate by cwd containment.
+function findActiveSession(cwd) {
+  const working = [];
+  for (const [f, s] of sessions) if (s.working) working.push([f, s]);
+  if (working.length === 0) return null;
+  if (working.length === 1) return working[0];
+  const norm = cwd ? cwd.replace(/\/+$/, '') + '/' : '';
+  const match = norm && working.find(([f]) => f.startsWith(norm));
+  return match || working[0];
+}
+
+// Like findActiveSession but also matches an idle (non-working) session under
+// cwd — used for status events (idle/permission notifications) that arrive when
+// the agent is between rounds.
+function findSessionByCwd(cwd) {
+  const active = findActiveSession(cwd);
+  if (active) return active;
+  const norm = cwd ? cwd.replace(/\/+$/, '') + '/' : '';
+  let best = null;
+  for (const [f, s] of sessions) {
+    if (!norm || f.startsWith(norm)) best = [f, s];
+  }
+  return best;
+}
+
+// Turn a tool call into a short, CLI-like activity line.
+function formatActivity(tool, input) {
+  input = input || {};
+  const base = p => (typeof p === 'string' ? p.split('/').pop() : '');
+  const clip = (s, n) => (typeof s === 'string' ? (s.length > n ? s.slice(0, n) + '…' : s) : '');
+  switch (tool) {
+    case 'Read': return `Read ${base(input.file_path)}`;
+    case 'Edit':
+    case 'MultiEdit': return `Edit ${base(input.file_path)}`;
+    case 'Write': return `Write ${base(input.file_path)}`;
+    case 'NotebookEdit': return `Edit ${base(input.notebook_path || input.file_path)}`;
+    case 'Bash': return `Bash: ${clip(input.command, 70)}`;
+    case 'Grep': return `Search "${clip(input.pattern, 40)}"`;
+    case 'Glob': return `Find ${clip(input.pattern, 40)}`;
+    case 'WebFetch': return `Fetch ${clip(input.url, 50)}`;
+    case 'WebSearch': return `Web search "${clip(input.query, 40)}"`;
+    case 'Task': return `Delegate: ${clip(input.description, 40)}`;
+    default: return tool || 'Working…';
+  }
+}
+
+// Permission-decision JSON the PreToolUse hook echoes back to Claude Code.
+function permJSON(decision, reason) {
+  return JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: decision,
+      ...(reason ? { permissionDecisionReason: reason } : {}),
+    },
+  });
 }
 
 // --- SDK injection ---
@@ -370,13 +434,128 @@ async function handler(req, res) {
     return send(res, 200, { cancelled: !!sess.cancelRequested });
   }
 
-  // Fileless check used by the bundled PreToolUse hook: is any in-flight
+  // Fileless check used by the `annotron check` CLI fallback: is any in-flight
   // (actively-working) session currently under a cancel request?
   if (pathname === '/cancel-check' && method === 'GET') {
     for (const [f, s] of sessions) {
       if (s.working && s.cancelRequested) return send(res, 200, { cancelled: true, file: f });
     }
     return send(res, 200, { cancelled: false });
+  }
+
+  // ── Hook ingest (Claude Code hooks POST their raw stdin JSON here) ──────────
+  // PreToolUse: mirror the activity, enforce cancel, and (if remote-approve is
+  // on) gate the tool on a browser Allow/Deny. Returns the exact JSON the hook
+  // echoes back to Claude Code, or an empty body meaning "defer to normal flow".
+  if (pathname === '/hook/pretool' && method === 'POST') {
+    const body = await readBody(req);
+    const tool = body.tool_name || body.tool || '';
+    const input = body.tool_input || body.input || {};
+    // Never gate/mirror annotron's OWN CLI calls — the agent must be able to
+    // reply/poll/check even while cancelled or while remote-approve is on
+    // (gating them would deadlock the poll). Detect the real command string
+    // here (server-side JSON parse) rather than fuzzy-matching raw stdin.
+    const cmd = typeof input.command === 'string' ? input.command : '';
+    if (tool === 'Bash' && /annotron["']?\s+(poll|progress|check|stop|help)\b/.test(cmd)) {
+      return send(res, 200, '');
+    }
+    const found = findActiveSession(body.cwd);
+    if (!found) return send(res, 200, '');       // no active review → normal flow
+    const [file, sess] = found;
+    broadcastSSE(file, 'agent-progress', JSON.stringify({ step: formatActivity(tool, input) }));
+
+    if (sess.cancelRequested) {
+      return send(res, 200, permJSON('deny',
+        'annotron: the user cancelled the current review. Stop immediately — do not run further tools. Reply on the artifact (annotron poll <file> --reply "Stopped — cancelled by user.") then wait for new feedback.'));
+    }
+    if (!sess.remoteApprove) return send(res, 200, '');
+    if (sess.autoAllowTools.has(tool)) return send(res, 200, permJSON('allow'));
+
+    const requestId = 'perm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const summary = formatActivity(tool, input);
+    sess.pendingPerms.set(requestId, { tool, summary });
+    broadcastSSE(file, 'permission-request', JSON.stringify({ requestId, tool, summary }));
+    const decision = await new Promise(resolve => {
+      sess.permWaiters.set(requestId, resolve);
+      setTimeout(() => {
+        if (sess.permWaiters.has(requestId)) { sess.permWaiters.delete(requestId); resolve(null); }
+      }, 170000);
+    });
+    sess.pendingPerms.delete(requestId);
+    broadcastSSE(file, 'permission-resolved', JSON.stringify({ requestId }));
+    if (!decision) {
+      return send(res, 200, permJSON('ask',
+        'annotron: no response from the review UI in time — falling back to the terminal prompt.'));
+    }
+    if (decision.decision === 'allow' && decision.always) sess.autoAllowTools.add(tool);
+    if (decision.decision === 'deny') {
+      return send(res, 200, permJSON('deny', decision.reason || 'Denied by the reviewer in annotron.'));
+    }
+    return send(res, 200, permJSON('allow'));
+  }
+
+  // PostToolUse: mark the current activity step done.
+  if (pathname === '/hook/posttool' && method === 'POST') {
+    const body = await readBody(req);
+    const found = findActiveSession(body.cwd);
+    if (found) broadcastSSE(found[0], 'agent-progress-done', JSON.stringify({ tool: body.tool_name || '' }));
+    return send(res, 200, { ok: true });
+  }
+
+  // Notification: reflect "waiting for permission / idle" in the browser.
+  if (pathname === '/hook/notify' && method === 'POST') {
+    const body = await readBody(req);
+    const found = findSessionByCwd(body.cwd);
+    const type = body.notification_type || body.type || '';
+    if (found) broadcastSSE(found[0], 'agent-status', JSON.stringify({ type }));
+    return send(res, 200, { ok: true });
+  }
+
+  // Stop: the turn finished → agent is idle, waiting for the next feedback.
+  if (pathname === '/hook/stop' && method === 'POST') {
+    const body = await readBody(req);
+    const found = findSessionByCwd(body.cwd);
+    if (found) broadcastSSE(found[0], 'agent-status', JSON.stringify({ type: 'idle' }));
+    return send(res, 200, { ok: true });
+  }
+
+  // ── Remote permission control (from the browser) ────────────────────────────
+  if (pathname === '/permission/decision' && method === 'POST') {
+    const body = await readBody(req);
+    const file = body.file;
+    if (!file) return send(res, 400, { error: 'missing file' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    const sess = getSession(abs);
+    const resolve = sess.permWaiters.get(body.requestId);
+    if (resolve) {
+      sess.permWaiters.delete(body.requestId);
+      resolve({
+        decision: body.decision === 'deny' ? 'deny' : 'allow',
+        always: !!body.always,
+        reason: body.reason || '',
+      });
+    }
+    return send(res, 200, { ok: true });
+  }
+
+  if (pathname === '/permission/mode' && method === 'POST') {
+    const body = await readBody(req);
+    const file = body.file;
+    if (!file) return send(res, 400, { error: 'missing file' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    const sess = getSession(abs);
+    sess.remoteApprove = !!body.enabled;
+    if (!sess.remoteApprove) {
+      // Turning off: release anything currently waiting so nothing hangs.
+      for (const resolve of sess.permWaiters.values()) resolve(null);
+      sess.permWaiters.clear();
+      sess.pendingPerms.clear();
+    }
+    if (body.clearAutoAllow) sess.autoAllowTools.clear();
+    broadcastSSE(abs, 'permission-mode', JSON.stringify({ enabled: sess.remoteApprove }));
+    return send(res, 200, { ok: true, enabled: sess.remoteApprove });
   }
 
   if (pathname === '/events' && method === 'GET') {
