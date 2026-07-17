@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0] - 2026-07-17
+
+### Added
+- **`manual-test` skill + `annotron-mr` CLI**: capture manual QA results per epic. Generates `MANUAL-RESULTS.md` from `TEST-CASES/*.md`, renders it with per-row Pass/Fail/N/A dropdowns + editable textareas for Description/Preconditions/Steps/Expected/Notes/Feature/Priority. Two-way sync: form edits persist to `MANUAL-RESULTS.md`; metadata edits propagate back to `TEST-CASES/<feature>.md` (both Summary and Details tables). Mid-run chat messages asking to add/remove/edit cases flow through the existing poll dispatcher, then `gen` refreshes in place.
+- **`annotron-mr` subcommands**: `gen <artifactsDir>` builds/merges the results file; `render <md>` produces the HTML with form controls + inline sync script; `save <html> <md>` parses form state back into the .md and patches TEST-CASES/; `autosave <artifactsDir>` starts a small HTTP server (`localhost:4477`) so keystrokes land on disk (~250ms debounce, 5-minute disk-write interval, in-page Save/Commit buttons flush immediately).
+- **Crash / power-loss protection**: three tiers — (1) localStorage on every edit (browser refresh), (2) HTTP autosave server writes `MANUAL-RESULTS.md` on interval + on tab-hidden + on unload (`keepalive: true`), (3) explicit `💾 Save now` / `📥 Commit & sync sources` toolbar buttons with big centered toast confirmation.
+- **New commands / skills**: `commands/manual-test.md` (slash command), `skills/manual-test/SKILL.md` (full protocol including the poll-dispatcher that handles structural test-case edits mid-loop).
+- **Vendored `marked`** at `src/vendor/marked.esm.mjs` — the renderer needs it, kept in-tree to preserve annotron's zero-runtime-dependency policy.
+
+### Notes
+- Additive only — no changes to `bin/annotron`, `src/server.js`, `src/sdk.js`, `src/chrome.html`. The tool piggy-backs on annotron's iframe (`sandbox="allow-forms"`) + serialize infrastructure; no server-side coupling.
+
 ## [0.6.0] - 2026-07-14
 
 ### Added
