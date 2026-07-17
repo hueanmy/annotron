@@ -252,12 +252,19 @@ function renderResultsTableHtml(table) {
       }
       if (field === 'result') {
         const current = (val || 'Untested').trim() || 'Untested';
+        const clsSuffix = current.replace(/[^a-zA-Z]/g, '');
         const opts = RESULT_OPTIONS.map(o => `<option value="${o}"${o === current ? ' selected' : ''}>${o}</option>`).join('');
-        return `<td class="mr-cell-result"><select data-tc-id="${escapeHtml(id)}" data-field="result" class="mr-select mr-r-${current.replace(/[^a-zA-Z]/g, '')}">${opts}</select></td>`;
+        return `<td class="mr-cell-result mr-r-${clsSuffix}"><select data-tc-id="${escapeHtml(id)}" data-field="result" class="mr-select mr-r-${clsSuffix}">${opts}</select></td>`;
       }
-      if (field === 'priority' || field === 'feature') {
-        // Short-text fields — single-line input.
+      if (field === 'priority') {
+        // Short single-line identifier — plain input.
         return `<td class="mr-cell-${field}"><input type="text" data-tc-id="${escapeHtml(id)}" data-field="${field}" value="${escapeHtml(val)}"></td>`;
+      }
+      if (field === 'feature') {
+        // Feature name is a single-line identifier semantically, but values like
+        // "internal-post-markup" are wide. Use a textarea so the column can be
+        // narrow and the value wraps onto multiple lines when needed.
+        return `<td class="mr-cell-${field}"><textarea data-tc-id="${escapeHtml(id)}" data-field="${field}" rows="1" placeholder="feature…">${escapeHtml(val)}</textarea></td>`;
       }
       if (field) {
         // Long-form editable fields (description/preconditions/steps/expected/notes).
@@ -306,35 +313,26 @@ body { max-width: none !important; padding: 2.5rem 2rem 5rem; }
   border: 1px solid var(--border); user-select: all;
 }
 .mr-cell-priority input { font-size: .82rem; text-align: center; font-weight: 600; }
-.mr-cell-feature input {
-  font-size: .82rem; font-family: ui-monospace, Menlo, monospace;
+.mr-cell-feature textarea {
+  font-size: .72rem; font-family: ui-monospace, Menlo, monospace;
   color: var(--accent); font-weight: 600; background: var(--accent-soft);
-  border-color: transparent;
+  border-color: transparent; padding: .22em .35em;
+  word-break: break-all; overflow-wrap: anywhere;
+  min-height: 3em; line-height: 1.3;
 }
-.mr-cell-feature input:focus { background: var(--surface-2); border-color: var(--accent); }
+.mr-cell-feature textarea:focus { background: var(--surface-2); border-color: var(--accent); }
 .mr-dirty { background: rgba(243, 156, 18, .12) !important; }
 .mr-dirty select, .mr-dirty input, .mr-dirty textarea { border-color: var(--orange, #f39c12) !important; }
-#mr-restore-banner {
-  position: sticky; top: 0; z-index: 20;
-  background: #f39c12; color: #1a1a1a; padding: .7em 1em;
-  display: flex; gap: 1em; align-items: center; flex-wrap: wrap;
-  font-family: ui-sans-serif, -apple-system, sans-serif; font-size: .9rem;
-  border-bottom: 1px solid #d68910;
-  margin: 0 -2rem 1.2em;
-}
-#mr-restore-banner button {
-  border: none; padding: .35em .8em; border-radius: 5px; cursor: pointer;
-  font-size: .82rem; font-weight: 600;
-}
-#mr-banner-keep    { background: #1a1a1a; color: #fff; }
-#mr-banner-discard { background: #e74c3c; color: #fff; }
+/* Restore banner removed — restore is silent via a fade ping. */
 #mr-toolbar {
-  position: sticky; top: 0; z-index: 12;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; padding: .6em .9em; margin: 0 0 1em;
-  display: flex; gap: .6em; align-items: center;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  background: var(--surface); border-bottom: 1px solid var(--border-strong);
+  padding: .55em 1.2em;
+  display: flex; gap: .6em; align-items: center; flex-wrap: wrap;
   font-family: ui-sans-serif, -apple-system, sans-serif;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+body { padding-top: 4rem !important; } /* leave room for the fixed toolbar */
 #mr-toolbar button {
   border: 1px solid var(--accent); background: var(--accent); color: #fff;
   border-radius: 6px; padding: .4em .9em; font-size: .82rem; font-weight: 600;
@@ -344,6 +342,21 @@ body { max-width: none !important; padding: 2.5rem 2rem 5rem; }
 #mr-toolbar button:disabled { opacity: .5; cursor: default; }
 #mr-btn-commit { background: transparent; color: var(--accent); }
 #mr-btn-commit:hover:not(:disabled) { background: var(--accent-soft); }
+#mr-search {
+  flex: 0 1 22rem; min-width: 10rem;
+  padding: .4em .8em; font-size: .85rem; font-family: inherit;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 6px;
+}
+#mr-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+#mr-filter-result {
+  padding: .4em .5em; font-size: .82rem; font-family: inherit;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 6px;
+}
+#mr-search-count { color: var(--muted); font-size: .75rem; }
+.mr-row-hidden { display: none !important; }
+.mr-hl { background: rgba(243, 156, 18, .35); border-radius: 2px; padding: 0 .1em; }
 #mr-toolbar-status { color: var(--muted); font-size: .82rem; margin-left: auto; font-weight: 600; }
 #mr-toolbar-status.ok    { color: #2ecc71; }
 #mr-toolbar-status.err   { color: #e74c3c; }
@@ -393,14 +406,14 @@ body { max-width: none !important; padding: 2.5rem 2rem 5rem; }
   opacity: 1; transition: opacity 0.6s ease;
   pointer-events: none; box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
-.mr-table { table-layout: fixed; font-size: .82rem; width: 100%; }
+.mr-table { table-layout: fixed; font-size: .82rem; width: 100%; min-width: 110rem; }
 .mr-table td, .mr-table th { vertical-align: top; word-wrap: break-word; overflow-wrap: anywhere; }
 .mr-table-wrap { overflow-x: auto; }
 /* Column widths — id / feature / priority stay compact & one-line, the long-form
    columns stretch to fill the rest. */
 /* Order: TC ID | Feature | Description | Preconditions | Steps | Expected | Result | Notes | Priority */
 .mr-table th:nth-child(1), .mr-table td:nth-child(1) { width: 7rem;  } /* TC ID */
-.mr-table th:nth-child(2), .mr-table td:nth-child(2) { width: 11rem; } /* Feature */
+.mr-table th:nth-child(2), .mr-table td:nth-child(2) { width: 7rem; } /* Feature */
 .mr-table th:nth-child(3), .mr-table td:nth-child(3) { width: 16rem; } /* Description */
 .mr-table th:nth-child(4), .mr-table td:nth-child(4) { width: 13rem; } /* Preconditions */
 .mr-table th:nth-child(5), .mr-table td:nth-child(5) { width: 19rem; } /* Steps */
@@ -409,12 +422,21 @@ body { max-width: none !important; padding: 2.5rem 2rem 5rem; }
 .mr-table th:nth-child(8), .mr-table td:nth-child(8) { width: 13rem; } /* Notes */
 .mr-table th:nth-child(9), .mr-table td:nth-child(9) { width: 4.5rem; text-align: center; color: var(--muted); } /* Priority */
 .mr-table textarea { white-space: pre-wrap; }
-.mr-r-Pass  { background: rgba(46, 204, 113, .18); }
-.mr-r-Fail  { background: rgba(231, 76, 60, .18); }
-.mr-r-NA    { background: rgba(160, 160, 160, .16); }
-.mr-r-Untested { background: var(--surface-2); }
+/* Result cell + select colouring — obvious at-a-glance status */
+td.mr-r-Pass     { background: rgba(46, 204, 113, .22) !important; }
+td.mr-r-Fail     { background: rgba(231, 76, 60, .22)  !important; }
+td.mr-r-NA       { background: rgba(160, 160, 160, .18) !important; }
+td.mr-r-Untested { background: var(--surface-2)         !important; }
+.mr-table select.mr-r-Pass     { background: #2ecc71; color: #fff; font-weight: 700; border-color: #27ae60; }
+.mr-table select.mr-r-Fail     { background: #e74c3c; color: #fff; font-weight: 700; border-color: #c0392b; }
+.mr-table select.mr-r-NA       { background: #95a5a6; color: #fff; font-weight: 700; border-color: #7f8c8d; }
+.mr-table select.mr-r-Untested { background: var(--surface-2); color: var(--muted); font-weight: 500; }
+.mr-table select.mr-r-Pass option, .mr-table select.mr-r-Fail option,
+.mr-table select.mr-r-NA option, .mr-table select.mr-r-Untested option {
+  background: var(--surface-2); color: var(--text); font-weight: 500;
+}
 #mr-summary {
-  position: sticky; top: 0; z-index: 5;
+  position: sticky; top: 3.6rem; z-index: 5; /* below the fixed toolbar */
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 10px; padding: .7em 1em; margin: 0 0 1.2em;
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -465,14 +487,47 @@ const MR_SYNC_SCRIPT = `
     else td.classList.remove('mr-dirty');
   }
 
+  // Also update the static "Summary" markdown table at the top of the page so
+  // its counts don't drift from the live sticky bar. Detects it as the first
+  // <table> whose header cells are "Metric" + "Count" (matches the .md
+  // structure emitted by renderManualResultsMd).
+  var staticSummaryTable = null;
+  (function findStaticSummary() {
+    var tables = document.querySelectorAll('table');
+    for (var i = 0; i < tables.length; i++) {
+      var ths = tables[i].querySelectorAll('thead th');
+      if (ths.length === 2 &&
+          /^metric$/i.test((ths[0].textContent || '').trim()) &&
+          /^count$/i.test((ths[1].textContent || '').trim())) {
+        staticSummaryTable = tables[i];
+        break;
+      }
+    }
+  })();
+  function updateStaticSummary(counts, total) {
+    if (!staticSummaryTable) return;
+    var rows = staticSummaryTable.querySelectorAll('tbody tr');
+    for (var i = 0; i < rows.length; i++) {
+      var cells = rows[i].querySelectorAll('td');
+      if (cells.length < 2) continue;
+      var label = (cells[0].textContent || '').trim().toLowerCase();
+      if (label === 'total') cells[1].textContent = total;
+      else if (label === 'untested') cells[1].textContent = counts.Untested;
+      else if (label === 'pass') cells[1].textContent = counts.Pass;
+      else if (label === 'fail') cells[1].textContent = counts.Fail;
+      else if (label === 'n/a') cells[1].textContent = counts['N/A'];
+    }
+  }
+
   function updateSummary() {
     var counts = { Untested: 0, Pass: 0, Fail: 0, 'N/A': 0 };
     tbl.querySelectorAll('select[data-field="result"]').forEach(function (s) {
       counts[s.value] = (counts[s.value] || 0) + 1;
     });
+    var total = counts.Untested + counts.Pass + counts.Fail + counts['N/A'];
+    updateStaticSummary(counts, total);
     var dirty = tbl.querySelectorAll('td.mr-dirty').length;
     if (!summary) return;
-    var total = counts.Untested + counts.Pass + counts.Fail + counts['N/A'];
     summary.innerHTML =
       '<span>Total: <span class="mr-count">' + total + '</span></span>' +
       '<span>Pass: <span class="mr-count" style="color:#2ecc71">' + counts.Pass + '</span></span>' +
@@ -480,7 +535,7 @@ const MR_SYNC_SCRIPT = `
       '<span>N/A: <span class="mr-count" style="color:#888">' + counts['N/A'] + '</span></span>' +
       '<span>Untested: <span class="mr-count" style="color:var(--muted)">' + counts.Untested + '</span></span>' +
       (dirty ? '<span>Edited cells: <span class="mr-count" style="color:#f39c12">' + dirty + '</span></span>' : '') +
-      '<span class="mr-legend">Local auto-save on every edit · disk save every 5 min · use Save now / Commit for immediate write.</span>';
+      '<span class="mr-legend">Auto-save on every edit — landed on disk within ~1s. Commit to also propagate metadata to TEST-CASES/.</span>';
   }
 
   tbl.addEventListener('change', function (e) {
@@ -490,7 +545,10 @@ const MR_SYNC_SCRIPT = `
       Array.prototype.forEach.call(t.options, function (o) {
         if (o.value === t.value) o.setAttribute('selected', ''); else o.removeAttribute('selected');
       });
-      t.className = t.className.replace(/\\bmr-r-[A-Za-z]+\\b/g, '') + ' mr-r-' + t.value.replace(/[^a-zA-Z]/g, '');
+      var suffix = t.value.replace(/[^a-zA-Z]/g, '');
+      t.className = t.className.replace(/\\bmr-r-[A-Za-z]+\\b/g, '') + ' mr-r-' + suffix;
+      var td = t.closest('td');
+      if (td) td.className = td.className.replace(/\\bmr-r-[A-Za-z]+\\b/g, '').trim() + ' mr-r-' + suffix;
     }
     markDirty(t);
     updateSummary();
@@ -529,22 +587,27 @@ const MR_SYNC_SCRIPT = `
   }
   var AUTOSAVE_URL = (document.querySelector('meta[name="mr-autosave-url"]') || {}).content || '';
   var MD_PATH      = (document.querySelector('meta[name="mr-md-path"]')      || {}).content || '';
+  var RENDER_TS    = (document.querySelector('meta[name="mr-render-ts"]')    || {}).content || '';
   var serverAlive  = false;
   var LOCAL_DEBOUNCE_MS = 500;         // localStorage — fast; no external side effect.
-  var DISK_INTERVAL_MS  = 5 * 60 * 1000; // disk (server POST) — every 5 min if dirty.
+  var DISK_INTERVAL_MS  = 30 * 1000;   // disk (server POST) — every 30s if dirty.
 
-  // Health-check the autosave server once on load; retry if it comes online later.
+  // Health-check the autosave server. Silent — only flashes the badge on the
+  // very first check (to confirm autosave is armed) and on state transitions
+  // (server goes up/down). No ping every 15s.
+  var initialCheckDone = false;
   function checkServer() {
     if (!AUTOSAVE_URL) return;
+    var wasAlive = serverAlive;
     fetch(AUTOSAVE_URL + '/health', { mode: 'cors' })
       .then(function (r) { serverAlive = r.ok; })
       .catch(function () { serverAlive = false; })
       .finally(function () {
-        var el = document.getElementById('mr-autosave-ping');
-        if (el && !el._flashed) {
-          el.textContent = serverAlive ? 'Auto-save armed (disk)' : 'Auto-save armed (local only)';
-          el.style.opacity = '1';
-          setTimeout(function () { el.style.opacity = '0'; }, 2000);
+        if (!initialCheckDone) {
+          initialCheckDone = true;
+          flashPing(serverAlive ? 'Auto-save armed (disk)' : 'Auto-save armed (local only)');
+        } else if (wasAlive !== serverAlive) {
+          flashPing(serverAlive ? 'Autosave server back online' : 'Autosave server went offline');
         }
       });
   }
@@ -552,11 +615,17 @@ const MR_SYNC_SCRIPT = `
   setInterval(checkServer, 15000);
 
   // localStorage save (fast). Runs on every keystroke via debounce — cheap, purely
-  // in-browser, no file I/O.
+  // in-browser, no file I/O. Also fires diskSaveIfDirty right away so keystrokes
+  // land on disk within ~1s (server debounces 250ms), not stuck for 30s.
   function localSaveNow() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ts: Date.now(), values: collectAllValues() }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        ts: Date.now(),
+        renderTs: RENDER_TS,
+        values: collectAllValues(),
+      }));
     } catch (e) {}
+    diskSaveIfDirty();
   }
   function scheduleAutoSave() {
     clearTimeout(saveTimer);
@@ -569,6 +638,8 @@ const MR_SYNC_SCRIPT = `
   var lastDiskSaveAt = 0;
   var lastLocalSaveMark = 0;
   function markLocalChange() { lastLocalSaveMark = Date.now(); }
+  // Throttle ping — mỗi 500ms save quá nhiều, ping spam. Chỉ flash mỗi 5s dù save nhiều.
+  var lastPingAt = 0;
   function diskSaveIfDirty() {
     if (!serverAlive || !MD_PATH) return;
     if (lastLocalSaveMark <= lastDiskSaveAt) return; // nothing changed since last disk save
@@ -582,7 +653,10 @@ const MR_SYNC_SCRIPT = `
     }).then(function (r) {
       if (r.ok) {
         lastDiskSaveAt = Date.now();
-        flashPing('Saved to disk · ' + new Date().toLocaleTimeString());
+        if (Date.now() - lastPingAt > 5000) {
+          lastPingAt = Date.now();
+          flashPing('Saved to disk · ' + new Date().toLocaleTimeString());
+        }
       } else {
         serverAlive = false;
         flashPing('Server error · saved locally');
@@ -618,6 +692,15 @@ const MR_SYNC_SCRIPT = `
     try { data = JSON.parse(raw); } catch (e) { return null; }
     if (!data || !data.values) return null;
 
+    // Staleness handling: if the file has been re-rendered since this snapshot
+    // was saved, metadata columns (description/steps/etc.) on disk may be
+    // fresher — restoring them would clobber. But Result + Notes are strictly
+    // user-produced, disk can only ever be less-fresh than localStorage for
+    // these — always restore them. NEVER delete the snapshot; user may want to
+    // review it via the banner.
+    var stale = !!(data.renderTs && RENDER_TS && data.renderTs !== RENDER_TS);
+    var ALWAYS_RESTORE = { result: true, notes: true };
+
     var restored = 0;
     tbl.querySelectorAll('[data-tc-id][data-field]').forEach(function (el) {
       var id = el.dataset.tcId, field = el.dataset.field;
@@ -625,6 +708,9 @@ const MR_SYNC_SCRIPT = `
       if (saved === undefined || saved === null) return;
       var current = el.value || '';
       if (current === saved) return;
+      // Under staleness, skip metadata fields — disk may be fresher. Result +
+      // Notes are always safe to restore (only the browser can produce them).
+      if (stale && !ALWAYS_RESTORE[field]) return;
 
       if (el.tagName === 'SELECT') {
         el.value = saved;
@@ -648,21 +734,12 @@ const MR_SYNC_SCRIPT = `
     return { restored: restored, ts: data.ts };
   }
 
+  // Restore is now silent — no scary modal with Keep/Discard buttons. Result +
+  // Notes are always safe to restore (only the browser can produce them);
+  // metadata is skipped if stale. Nothing the user needs to decide.
   function showRestoreBanner(restored, ts) {
-    var b = document.createElement('div');
-    b.id = 'mr-restore-banner';
-    var when = new Date(ts).toLocaleString();
-    b.innerHTML =
-      '<span>💾 Restored <strong>' + restored + '</strong> unsaved edit' + (restored === 1 ? '' : 's') +
-      ' from ' + when + '.</span>' +
-      '<button id="mr-banner-keep">Keep</button>' +
-      '<button id="mr-banner-discard">Discard &amp; reload</button>';
-    document.body.insertBefore(b, document.body.firstChild);
-    document.getElementById('mr-banner-keep').addEventListener('click', function () { b.remove(); });
-    document.getElementById('mr-banner-discard').addEventListener('click', function () {
-      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-      location.reload();
-    });
+    if (!restored) return;
+    flashPing('Recovered ' + restored + ' edit' + (restored === 1 ? '' : 's') + ' from local backup');
   }
 
   // Ping badge (bottom-right, fades out) so users see auto-save happening.
@@ -795,6 +872,96 @@ const MR_SYNC_SCRIPT = `
     }
   }
 
+  // ── Search + filter ────────────────────────────────────────────────────────
+  //   • Keyword search over TC ID, Feature, Description, Preconditions, Steps,
+  //     Expected, Notes (case-insensitive substring).
+  //   • Result filter (Pass / Fail / N/A / Untested / All).
+  //   • Hotkey: Ctrl/Cmd+F or forward-slash focuses the search box; Esc clears + refocuses table.
+  //   Rows that don't match get .mr-row-hidden. Live counts on the right.
+  var searchInput  = document.getElementById('mr-search');
+  var resultFilter = document.getElementById('mr-filter-result');
+  var searchCount  = document.getElementById('mr-search-count');
+
+  function collectRowText(row) {
+    // Concatenate visible values of every editable/read-only cell into one string.
+    var out = [];
+    row.querySelectorAll('[data-field]').forEach(function (el) {
+      if (el.tagName === 'SELECT') out.push(el.value);
+      else out.push(el.value || '');
+    });
+    // Also include the TC ID (read-only, in <code>).
+    var idCell = row.querySelector('.mr-cell-id');
+    if (idCell) out.push(idCell.textContent || '');
+    return out.join(' \\n ').toLowerCase();
+  }
+
+  var rowCache = null;
+  function ensureRowCache() {
+    if (rowCache) return rowCache;
+    rowCache = [];
+    tbl.querySelectorAll('tbody tr[data-tc-id]').forEach(function (row) {
+      rowCache.push({ row: row, text: collectRowText(row) });
+    });
+    return rowCache;
+  }
+  function invalidateRowCache() { rowCache = null; }
+
+  function applyFilter() {
+    var q = (searchInput.value || '').trim().toLowerCase();
+    var rf = resultFilter.value || '';
+    var cache = ensureRowCache();
+    var shown = 0;
+    for (var i = 0; i < cache.length; i++) {
+      var entry = cache[i];
+      var matchesQuery = !q || entry.text.indexOf(q) !== -1;
+      var matchesResult = true;
+      if (rf) {
+        var sel = entry.row.querySelector('select[data-field="result"]');
+        matchesResult = sel && sel.value === rf;
+      }
+      var visible = matchesQuery && matchesResult;
+      entry.row.classList.toggle('mr-row-hidden', !visible);
+      if (visible) shown++;
+    }
+    if (searchCount) {
+      if (q || rf) searchCount.textContent = shown + ' / ' + cache.length + ' shown';
+      else searchCount.textContent = '';
+    }
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', applyFilter);
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { searchInput.value = ''; applyFilter(); searchInput.blur(); }
+    });
+  }
+  if (resultFilter) resultFilter.addEventListener('change', applyFilter);
+
+  // Filter needs a re-check when values change (e.g. user changes a Result and
+  // a Result filter is active). Rebuild cache lazily on next filter.
+  tbl.addEventListener('change', invalidateRowCache, true);
+  tbl.addEventListener('input',  invalidateRowCache, true);
+
+  // Global shortcuts.
+  document.addEventListener('keydown', function (e) {
+    if (e.defaultPrevented) return;
+    var tag = document.activeElement && document.activeElement.tagName;
+    var inField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    // Ctrl/Cmd+F → focus search (override native browser find).
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+      return;
+    }
+    // "/" → focus search when not typing in another field.
+    if (e.key === '/' && !inField) {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+    }
+  });
+
   if (btnSave) btnSave.addEventListener('click', function () {
     callEndpoint('/save', btnSave, {
       normal:  '💾 Save now',
@@ -850,6 +1017,7 @@ function cmdRender(mdPath, outPath) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="mr-md-path" content="${escapeHtml(path.resolve(mdPath))}">
 <meta name="mr-autosave-url" content="http://localhost:4477">
+<meta name="mr-render-ts" content="${Date.now()}">
 <title>${escapeHtml(title)}</title>
 <style>${baseCss}${MR_CSS}</style>
 </head>
@@ -857,6 +1025,15 @@ function cmdRender(mdPath, outPath) {
 <div id="mr-toolbar">
   <button id="mr-btn-save" title="Save results to MANUAL-RESULTS.md now (does not sync to TEST-CASES/)">💾 Save now</button>
   <button id="mr-btn-commit" title="Save + propagate metadata edits back to TEST-CASES/&lt;feature&gt;.md">📥 Commit &amp; sync sources</button>
+  <input id="mr-search" type="search" placeholder="Search cases…  (Ctrl/Cmd-F or /)" autocomplete="off" />
+  <select id="mr-filter-result" title="Filter by result">
+    <option value="">All results</option>
+    <option value="Untested">Untested</option>
+    <option value="Pass">Pass</option>
+    <option value="Fail">Fail</option>
+    <option value="N/A">N/A</option>
+  </select>
+  <span id="mr-search-count"></span>
   <span id="mr-toolbar-status"></span>
 </div>
 <div id="mr-toast-layer"></div>
@@ -875,9 +1052,8 @@ ${afterHtml}
   console.log(`wrote ${out}`);
 }
 
-// Base stylesheet — self-contained (no external CSS files, no theming deps). The
-// palette + typography match the "reader" look used by other annotron artifacts;
-// mr-specific overrides are appended on top via MR_CSS.
+// Base stylesheet — self-contained (no external file reads, no theming deps).
+// mr-specific overrides in MR_CSS layer on top.
 const BASE_CSS = `
 :root {
   color-scheme: light dark;
@@ -1282,6 +1458,37 @@ function cmdAutosave(artifactsDir, args) {
   process.on('SIGTERM', shutdown);
 }
 
+/** Read state directly from MANUAL-RESULTS.md (which the autosave server keeps
+ *  fresh) and propagate metadata changes to TEST-CASES/<feature>.md. Does NOT
+ *  rewrite MANUAL-RESULTS.md — it's already the source of truth. */
+function cmdCommitMd(mdPath) {
+  const abs = path.resolve(mdPath);
+  const artifactsDir = path.dirname(abs);
+  const mdText = fs.readFileSync(abs, 'utf8');
+  const table = findResultsTable(mdText);
+  if (!table) die(`no results table in ${abs}`);
+
+  const fields = table.headers.map(fieldForHeader);
+  const state = {};
+  for (const row of table.rows) {
+    const rowState = {};
+    row.forEach((cell, i) => {
+      const f = fields[i];
+      if (f) rowState[f] = (cell || '').trim();
+    });
+    const id = rowState.id;
+    if (id && TC_ID_RE.test(id)) state[id] = rowState;
+  }
+
+  const result = commitFromState(artifactsDir, abs, state);
+  console.log(`commit-md ${mdPath} — propagated to ${result.patchedFiles.length} TEST-CASES/ file(s)`);
+  for (const f of result.patchedFiles) console.log(`  ${path.relative(process.cwd(), f.path)} (${f.rows} rows)`);
+  if (result.featureChanges.length) {
+    console.warn(`WARN: feature-column changes NOT applied (do manually):`);
+    for (const c of result.featureChanges) console.warn(`  ${c.id}: ${c.from} → ${c.to}`);
+  }
+}
+
 /** Full commit driven by a state object (no HTML parse). Mirrors cmdSave: updates
  *  MANUAL-RESULTS.md with every column, then patches TEST-CASES/<feature>.md for
  *  changed metadata (description/preconditions/steps/expected/priority). Feature
@@ -1378,9 +1585,15 @@ if (cmd === 'gen') {
 } else if (cmd === 'save') {
   if (!rest[0] || !rest[1]) die('usage: manual-results.mjs save <MANUAL-RESULTS.html> <MANUAL-RESULTS.md>');
   cmdSave(rest[0], rest[1]);
+} else if (cmd === 'commit-md') {
+  // Propagate metadata from MANUAL-RESULTS.md → TEST-CASES/<feature>.md WITHOUT
+  // touching the .md itself. Use this at the end of a /manual-test loop instead
+  // of `save HTML MD`, which reads a possibly-stale HTML and overwrites MD.
+  if (!rest[0]) die('usage: manual-results.mjs commit-md <MANUAL-RESULTS.md>');
+  cmdCommitMd(rest[0]);
 } else if (cmd === 'autosave') {
   if (!rest[0]) die('usage: manual-results.mjs autosave <epicArtifactsDir> [--port=4477]');
   cmdAutosave(rest[0], rest);
 } else {
-  die('usage:\n  manual-results.mjs gen <artifactsDir>\n  manual-results.mjs render <md> [out.html]\n  manual-results.mjs save <html> <md>\n  manual-results.mjs autosave <artifactsDir> [--port=4477]');
+  die('usage:\n  manual-results.mjs gen <artifactsDir>\n  manual-results.mjs render <md> [out.html]\n  manual-results.mjs save <html> <md>\n  manual-results.mjs commit-md <md>\n  manual-results.mjs autosave <artifactsDir> [--port=4477]');
 }

@@ -20,7 +20,7 @@ Priority, Feature).
 
 Tools (installed alongside annotron on user's PATH):
 - `annotron-mr` — the manual-results CLI (subcommands: `gen`, `render`, `save`,
-  `autosave`).
+  `commit-md`, `autosave`).
 - `annotron` — the review editor (already on PATH).
 
 **One rule:** the `.md` is canonical, the `.html` is a throwaway render. All
@@ -96,13 +96,14 @@ Paths: `A = docs/epics/<epic>/artifacts`, `MD = $A/MANUAL-RESULTS.md`,
 
    Never edit while a poll is in flight — always wait for the JSON first.
 
-6. **Sync back to `.md`.** After Finalize, annotron has written the current
-   iframe HTML to `$HTML`. Run:
-   - `annotron-mr save "$HTML" "$MD"` — parses form state, updates all columns
-     in `$MD`, patches `TEST-CASES/<feature>.md` for any metadata edits,
-     regenerates the Summary table.
-   - `annotron-mr render "$MD"` — re-render so `$HTML` reflects the persisted
-     `.md` (annotron live-reloads).
+6. **Propagate metadata (no HTML read).** The autosave server has been writing
+   `$MD` continuously; `$MD` is the source of truth for state. HTML on disk is
+   a stale render — reading it would clobber recent autosaved edits (this
+   caused data-loss in earlier iterations). Instead:
+   - `annotron-mr commit-md "$MD"` — read `$MD`, diff metadata columns against
+     `TEST-CASES/`, patch any changes back. Does NOT rewrite `$MD`.
+   - `annotron-mr render "$MD"` — re-render `$HTML` so it reflects the latest
+     `.md` (harmless if annotron is already stopped).
 
 7. **Report + cleanup.** Reply to the user (via `annotron poll --reply` if the
    server is still up, or a normal turn reply if not) with a one-line summary:
