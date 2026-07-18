@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- **Markdown mode** — `annotron file.md` opens a Markdown source: the server renders it to HTML on the fly with **[merslim](https://www.npmjs.com/package/merslim)** turning ` ```mermaid ` fenced blocks into self-contained inline **SVG** (flowchart, class, ER, C4, sequence/state fall back to Unicode ASCII), so architecture docs with UML diagrams review nicely. The `.md` stays the source of truth: an editable **Markdown pane** (toggle in the top bar) plus a **Save** button (⌘/Ctrl+S) write your edits back to the `.md` and re-render the preview. New endpoints `GET /source` and `POST /save-md`; `Finalize` is hidden in this mode (it would overwrite the source), and `/finalize` refuses `.md` targets.
 - **Reviewer identity on comments** — comments now record and show *who* wrote them. A new `GET /whoami` resolves the reviewer from the GitHub login (`gh api user`), falling back to `git config user.name` / `user.email`, then `user@hostname`. The server stamps `author` + `authorDetail` onto each annotation and human thread message in the sidecar, and the sidebar renders the name, a colored initials avatar, and the email/host as a tooltip.
 
 ### Changed

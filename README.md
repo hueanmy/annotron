@@ -15,6 +15,7 @@ Agents (Claude Code, etc.) produce rich HTML plans, diagrams, reports, and mocku
 ## Features
 
 - **Point-and-click annotations** — comment on any element or text selection; feedback carries the CSS selector, the text, and your note.
+- **Markdown mode with diagrams** — open a `.md` and annotron renders it to HTML, turning ` ```mermaid ` blocks into inline SVG via [merslim](https://www.npmjs.com/package/merslim) (great for architecture docs / UML). An editable **Markdown pane** + **Save** button (⌘/Ctrl+S) sync your edits back to the `.md` source.
 - **Image attachments** — paste or upload images into the composer or any annotation reply/note; the agent reads them by path.
 - **Live activity mirror** — a bundled hook streams the agent's tool calls (Read/Edit/Bash/…) into the sidebar like a CLI, so you can follow along in real time.
 - **Turn-status bar** — always know whose turn it is: *Agent working… / Waiting for your feedback / Needs your permission*.
@@ -61,7 +62,7 @@ node bin/annotron artifact.html
 ## Usage
 
 ```
-annotron <file.html>                    Open the editor in browser
+annotron <file.html|file.md>            Open the editor in browser (.md renders to HTML with diagrams)
 annotron poll <file.html>               Wait for feedback (run by the agent)
 annotron poll <file.html> --reply "…"  Post a reply then wait for feedback
 annotron progress <file.html> "step"    Post a live progress step (optional; hooks do this automatically)

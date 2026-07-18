@@ -77,10 +77,10 @@ function openBrowser(url) {
 
 // --- Commands ---
 async function cmdOpen(file) {
-  if (!file) { console.error('Usage: annotron <file.html>'); process.exit(1); }
+  if (!file) { console.error('Usage: annotron <file.html|file.md>'); process.exit(1); }
   const abs = path.resolve(file);
   if (!fs.existsSync(abs)) { console.error(`File not found: ${abs}`); process.exit(1); }
-  if (!abs.endsWith('.html')) { console.error('File must be .html'); process.exit(1); }
+  if (!abs.endsWith('.html') && !/\.md$/i.test(abs)) { console.error('File must be .html or .md'); process.exit(1); }
 
   await ensureServer();
 

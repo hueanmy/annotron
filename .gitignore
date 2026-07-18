@@ -1,4 +1,5 @@
 .ast-graph/
+node_modules/
 
 # annotron review artifacts (transient)
 .annotron-uploads/

@@ -38,5 +38,9 @@
     "llm"
   ],
   "author": "Meii",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "markdown-it": "^14.3.0",
+    "merslim": "^0.2.3"
+  }
 }

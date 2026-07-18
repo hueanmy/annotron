@@ -92,6 +92,16 @@
   /* ── Layout ─────────────────────────────────────────────────────────── */
   #main { display: flex; height: calc(100vh - var(--bar-h)); }
   #iframe-wrap { flex: 1; min-width: 0; position: relative; background: var(--bg); }
+
+  /* Markdown source editor (Markdown mode only) */
+  #md-editor { width: 44%; min-width: 320px; max-width: 720px; flex: none; display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--line-08); min-height: 0; }
+  #md-editor[hidden] { display: none; }
+  .mde-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--line-08); font: 600 12px var(--ui); color: var(--dim-6); text-transform: uppercase; letter-spacing: .06em; flex: none; }
+  .mde-status { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--dim-45); }
+  .mde-status.dirty { color: var(--orange, #e07d00); }
+  .mde-status.saved { color: var(--green-ink); }
+  #md-textarea { flex: 1; min-height: 0; width: 100%; border: none; outline: none; resize: none; padding: 16px 18px; background: var(--panel); color: var(--ink); font: 13px/1.65 var(--mono); tab-size: 2; white-space: pre; overflow: auto; }
+  .mde-foot { flex: none; padding: 7px 14px; border-top: 1px solid var(--line-08); background: #FAFAFC; font: 400 11px var(--ui); color: var(--dim-45); display: flex; align-items: center; gap: 6px; }
   iframe { width: 100%; height: 100%; border: none; display: block; background: #fff; }
 
   #sidebar { width: var(--sidebar-w); flex: none; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--line-08); min-height: 0; }
@@ -293,17 +303,31 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
       <span id="annotate-label">Annotate</span>
     </button>
+    <button id="btn-md-source" class="btn-ghost" title="Toggle Markdown source editor" style="display:none">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M7 15v-4l2 2 2-2v4"/><path d="M16 11v4"/><path d="M14 13l2 2 2-2"/></svg>Markdown
+    </button>
     <button id="btn-download" class="btn-ghost" title="Download clean HTML (D)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg>Download
     </button>
     <button id="btn-finalize" class="btn-primary" title="Write result to disk (Shift+F)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Finalize
     </button>
+    <button id="btn-save-md" class="btn-primary" title="Save changes to the .md source (Cmd/Ctrl+S)" style="display:none">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>Save
+    </button>
     <button id="btn-help" title="Keyboard shortcuts (?)" aria-label="Show keyboard shortcuts">?</button>
   </div>
 </header>
 
 <div id="main">
+  <div id="md-editor" hidden>
+    <div class="mde-head">
+      <span>Markdown source</span>
+      <span class="mde-status" id="mde-status"></span>
+    </div>
+    <textarea id="md-textarea" spellcheck="false" placeholder="# Loading…" wrap="off"></textarea>
+    <div class="mde-foot"><kbd>Cmd/Ctrl</kbd><kbd>S</kbd> Save · edits render on Save</div>
+  </div>
   <div id="iframe-wrap">
     <iframe id="artifact-frame" title="Artifact preview" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
   </div>
@@ -1201,7 +1225,7 @@ btnFinalize.addEventListener('click', async () => {
 function connectSSE() {
   if (!file) return;
   const es = new EventSource('/events?file=' + encodeURIComponent(file));
-  es.addEventListener('reload', () => { savedScroll = frame.contentWindow?.scrollY || 0; loadArtifact(); });
+  es.addEventListener('reload', () => { savedScroll = frame.contentWindow?.scrollY || 0; loadArtifact(); loadSource(); });
   es.addEventListener('agent-thinking', () => { setAgentWorking(true); showWorking(); });
   es.addEventListener('agent-progress', (e) => { try { const d = JSON.parse(e.data); addWorkStep(d.step, d.done); } catch {} });
   es.addEventListener('agent-progress-done', () => {
@@ -1256,6 +1280,7 @@ document.addEventListener('keydown', (e) => {
     if (helpOpen) { closeHelp(); return; }
     if (annotating) { setAnnotate(false); return; }
   }
+  if (ctrl && (e.key === 's' || e.key === 'S')) { if (isMd) { e.preventDefault(); saveMd(); } return; }
   if (ctrl && e.key === 'z' && !e.shiftKey) { if (undoStack.length) { e.preventDefault(); undoRemove(); } return; }
   if (ctrl && e.key === 'Enter') { e.preventDefault(); sendFeedback(); return; }
   if (!inInput && !ctrl) {
@@ -1264,6 +1289,71 @@ document.addEventListener('keydown', (e) => {
     if (e.key === '?') { e.preventDefault(); helpOpen ? closeHelp() : openHelp(); return; }
   }
 });
+
+// ── Markdown mode ────────────────────────────────────────────────────────────
+// When the artifact is a .md source, annotron renders it to HTML (with merslim
+// diagrams) for review, and exposes an editable Markdown pane + Save button so
+// the user can sync edits back to the .md (the source of truth).
+const isMd = /\.md$/i.test(file);
+const mdEditor   = document.getElementById('md-editor');
+const mdTextarea = document.getElementById('md-textarea');
+const mdStatus   = document.getElementById('mde-status');
+const btnMdSource = document.getElementById('btn-md-source');
+const btnSaveMd   = document.getElementById('btn-save-md');
+let mdDirty = false, mdLoaded = false;
+
+function setMdStatus(kind) {
+  mdStatus.className = 'mde-status' + (kind ? ' ' + kind : '');
+  mdStatus.textContent = kind === 'dirty' ? 'Unsaved changes' : (kind === 'saved' ? 'Saved' : '');
+}
+async function loadSource(force) {
+  if (!isMd) return;
+  if (mdDirty && !force) return;   // never clobber unsaved edits
+  try {
+    const res = await fetch('/source?file=' + encodeURIComponent(file));
+    if (!res.ok) return;
+    const d = await res.json();
+    mdTextarea.value = d.markdown || '';
+    mdLoaded = true; mdDirty = false; setMdStatus('');
+  } catch {}
+}
+function toggleMdEditor() {
+  const show = mdEditor.hasAttribute('hidden');
+  if (show) {
+    mdEditor.removeAttribute('hidden');
+    btnMdSource.classList.add('active');
+    if (!mdLoaded) loadSource();
+    setTimeout(() => mdTextarea.focus(), 30);
+  } else {
+    mdEditor.setAttribute('hidden', '');
+    btnMdSource.classList.remove('active');
+  }
+}
+async function saveMd() {
+  if (!isMd) return;
+  btnSaveMd.disabled = true;
+  try {
+    const res = await fetch('/save-md', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file, markdown: mdTextarea.value }),
+    });
+    if (res.ok) { mdDirty = false; setMdStatus('saved'); flashToast('Saved to .md — re-rendering preview'); }
+    else { const e = await res.json().catch(() => ({})); flashToast('Save failed: ' + (e.error || res.statusText)); }
+  } catch { flashToast('Save failed'); }
+  finally { btnSaveMd.disabled = false; }
+}
+if (isMd) {
+  btnFinalize.style.display = 'none';   // Finalize would overwrite .md with HTML
+  btnMdSource.style.display = '';
+  btnSaveMd.style.display = '';
+  btnMdSource.addEventListener('click', toggleMdEditor);
+  btnSaveMd.addEventListener('click', saveMd);
+  mdTextarea.addEventListener('input', () => { mdDirty = true; setMdStatus('dirty'); });
+  mdTextarea.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); saveMd(); }
+  });
+  loadSource();   // keep the textarea in sync even while hidden, so Save is safe
+}
 
 // ── Init ───────────────────────────────────────────────────────────────────
 loadWhoami();

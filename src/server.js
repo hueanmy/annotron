@@ -6,9 +6,14 @@ import crypto from 'crypto';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { fileURLToPath } from 'url';
+import { renderMarkdown } from './mdRender.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const execFileP = promisify(execFile);
+
+// A source Markdown artifact is rendered to HTML on the fly; the .md stays the
+// source of truth and is what the Save button writes back to.
+const isMarkdown = (f) => /\.md$/i.test(f);
 
 // --- Reviewer identity ---------------------------------------------------------
 // Who is leaving comments? Prefer the GitHub login (via `gh`), then the git
@@ -239,7 +244,7 @@ async function handler(req, res) {
     if (!file) return send(res, 400, { error: 'missing file' });
     const abs = path.resolve(file);
     if (!fs.existsSync(abs)) return send(res, 404, { error: 'file not found' });
-    if (!abs.endsWith('.html')) return send(res, 400, { error: 'must be .html' });
+    if (!abs.endsWith('.html') && !isMarkdown(abs)) return send(res, 400, { error: 'must be .html or .md' });
     allowList.add(abs);
     getSession(abs);
     watchFile(abs);
@@ -264,8 +269,17 @@ async function handler(req, res) {
     if (!file) return send(res, 400, { error: 'missing file' });
     const abs = path.resolve(file);
     if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    let raw;
+    try { raw = fs.readFileSync(abs, 'utf8'); } catch { return send(res, 404, { error: 'not found' }); }
+    // Markdown source is rendered to HTML (with merslim diagrams) on the fly;
+    // HTML artifacts are served as-is. Either way the SDK is injected.
     let html;
-    try { html = fs.readFileSync(abs, 'utf8'); } catch { return send(res, 404, { error: 'not found' }); }
+    if (isMarkdown(abs)) {
+      try { html = await renderMarkdown(raw, { title: path.basename(abs) }); }
+      catch (e) { return send(res, 500, { error: 'markdown render failed: ' + e.message }); }
+    } else {
+      html = raw;
+    }
     const injected = injectSDK(html);
     // Never cache: the artifact changes as the agent edits it, and the injected
     // SDK changes across versions — a cached copy would serve a stale preview
@@ -273,6 +287,31 @@ async function handler(req, res) {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(injected);
     return;
+  }
+
+  // Raw Markdown source (for the in-browser editor pane, Markdown mode only).
+  if (pathname === '/source' && method === 'GET') {
+    const file = u.searchParams.get('file');
+    if (!file) return send(res, 400, { error: 'missing file' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    if (!isMarkdown(abs)) return send(res, 400, { error: 'not a markdown file' });
+    let text;
+    try { text = fs.readFileSync(abs, 'utf8'); } catch { return send(res, 404, { error: 'not found' }); }
+    return send(res, 200, { file: abs, markdown: text });
+  }
+
+  // Save the edited Markdown back to the .md source. The file watcher then
+  // fires a reload, re-rendering the preview (diagrams included).
+  if (pathname === '/save-md' && method === 'POST') {
+    const body = await readBody(req);
+    const file = body.file;
+    if (!file || typeof body.markdown !== 'string') return send(res, 400, { error: 'missing file or markdown' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    if (!isMarkdown(abs)) return send(res, 400, { error: 'not a markdown file' });
+    try { fs.writeFileSync(abs, body.markdown, 'utf8'); } catch (e) { return send(res, 500, { error: 'write failed: ' + e.message }); }
+    return send(res, 200, { ok: true });
   }
 
   if (pathname === '/annotations' && method === 'GET') {
@@ -403,6 +442,8 @@ async function handler(req, res) {
     if (!file || !body.html) return send(res, 400, { error: 'missing file or html' });
     const abs = path.resolve(file);
     if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    // Never overwrite a Markdown source with rendered HTML — use /save-md.
+    if (isMarkdown(abs)) return send(res, 400, { error: 'markdown source: use Save (writes .md), not Finalize' });
     const sess = getSession(abs);
     sess._suppressReload = true;
     fs.writeFileSync(abs, body.html, 'utf8');
