@@ -1,0 +1,58 @@
+{
+  "name": "annotron",
+  "displayName": "annotron — point-and-click artifact review",
+  "description": "Right-click a .md or .html file to open it in annotron for point-and-click review in your browser.",
+  "version": "0.1.0",
+  "publisher": "hueanmy",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/hueanmy/annotron" },
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Other", "Visualization"],
+  "keywords": ["annotron", "markdown", "review", "annotate", "mermaid", "diagram"],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "annotron.open", "title": "Open in annotron", "category": "annotron" },
+      { "command": "annotron.stop", "title": "Stop annotron server", "category": "annotron" }
+    ],
+    "menus": {
+      "explorer/context": [
+        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@50" }
+      ],
+      "editor/context": [
+        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@50" }
+      ],
+      "editor/title/context": [
+        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@50" }
+      ]
+    },
+    "configuration": {
+      "title": "annotron",
+      "properties": {
+        "annotron.port": {
+          "type": "number",
+          "default": 7321,
+          "markdownDescription": "Port the bundled annotron server listens on (`127.0.0.1`)."
+        },
+        "annotron.openIn": {
+          "type": "string",
+          "enum": ["browser", "vscode"],
+          "enumDescriptions": [
+            "Open in your external default browser",
+            "Open in a VS Code Simple Browser tab"
+          ],
+          "default": "browser",
+          "description": "Where to open the annotron review editor."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vendor": "bash scripts/vendor-annotron.sh",
+    "package": "npm run vendor && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.2.0"
+  }
+}

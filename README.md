@@ -45,6 +45,15 @@ Finalize → clean result written into the file
 Download → clean HTML saved to your machine
 ```
 
+## VS Code extension
+
+Prefer right‑click over the CLI? The bundled extension in [`editors/vscode/`](editors/vscode/) adds **Open in annotron** to the Explorer / editor context menu for `.md` and `.html` files. It ships annotron and runs it with VS Code's own Node (no global install), opening the review editor in your browser (or a Simple Browser tab — `annotron.openIn`).
+
+```bash
+cd editors/vscode && npm install && npm run package   # builds annotron-<version>.vsix
+code --install-extension annotron-*.vsix
+```
+
 ## Install
 
 ```bash
