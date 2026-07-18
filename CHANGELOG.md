@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- **Editor redesign** — reimplemented the review chrome and in-artifact overlays in a new light design system (imported from the Claude Design `Annotron.dc.html` project): Inter + Petrona typography, a `#2741F1` accent palette, rounded cards and soft shadows. Comment cards now show an avatar, author, relative time, kind tag, quoted selection, and threaded agent replies, with **Resolve/Reopen** and inline **Reply**. Selecting text (or clicking an element in Annotate mode) opens a "New comment" composer **inline in the artifact, anchored right below the selection/element**; on submit the comment lands in the sidebar as a pending card. The sidebar gains **Annotations / History** tabs with a timeline, and a toast surfaces actions. All backend wiring is unchanged — SSE live reload/activity mirror, long-poll feedback, sidecar annotations & threads, serialize/finalize/download, image upload, remote permission approval, and cancel all work as before. The dark theme and its toggle were removed in favor of the single light design.
+
+### Fixed
+- **Annotation cards collapse in later review turns** (issue #79): the sidebar annotation list (`#annotations-list`) is a flex column, and each `.ann-card` used `overflow: hidden`, which disables a flex item's automatic minimum size. Once enough saved annotations accumulated to fill the sidebar, every card (and the pending-selection card) was squeezed into an unreadable 1px sliver instead of the list scrolling — so on turn 2 neither old nor new annotations were visible. Cards and the section label now use `flex-shrink: 0`, so they keep their natural height and the list scrolls.
+
 ## [0.6.0] - 2026-07-14
 
 ### Added
