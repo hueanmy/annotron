@@ -13,7 +13,7 @@ const execFileP = promisify(execFile);
 
 // A source Markdown artifact is rendered to HTML on the fly; the .md stays the
 // source of truth and is what the Save button writes back to.
-const isMarkdown = (f) => /\.md$/i.test(f);
+const isMarkdown = (f) => /\.(md|markdown)$/i.test(f);
 
 // --- Reviewer identity ---------------------------------------------------------
 // Who is leaving comments? Prefer the GitHub login (via `gh`), then the git
