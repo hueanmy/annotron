@@ -21,11 +21,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // doesn't have to run anything by hand.
 function startAgent(file, port) {
   const existing = agents.get(file);
-  if (existing) { existing.show(false); return; }
+  // Reuse a live agent terminal; replace one whose process already exited (e.g.
+  // after the browser's "Done"), so re-opening always yields a working agent.
+  if (existing && existing.exitStatus === undefined) { existing.show(false); return; }
+  if (existing) { try { existing.dispose(); } catch (_) {} agents.delete(file); }
   const binPath = context.asAbsolutePath(path.join('vendor', 'annotron', 'bin', 'annotron'));
   const term = vscode.window.createTerminal({ name: 'annotron agent' });
   const q = (s) => `"${String(s).replace(/"/g, '\\"')}"`;
-  term.sendText(`ELECTRON_RUN_AS_NODE=1 ANNOTRON_PORT=${port} ${q(process.execPath)} ${q(binPath)} agent ${q(file)}`);
+  // Trailing `; exit` closes the terminal once the agent process ends — the
+  // browser's "Done" makes the agent stop, so no dead tab is left behind.
+  term.sendText(`ELECTRON_RUN_AS_NODE=1 ANNOTRON_PORT=${port} ${q(process.execPath)} ${q(binPath)} agent ${q(file)}; exit`);
   term.show(false);
   agents.set(file, term);
 }

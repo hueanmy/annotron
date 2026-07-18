@@ -61,9 +61,20 @@ async function renderDiagram(src) {
 
 const isMermaidFence = (info) => (info || '').trim().split(/\s+/)[0].toLowerCase() === 'mermaid';
 
+function slugify(text) {
+  return (text || '').toLowerCase().trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
 /** Render Markdown text to a full, self-contained HTML document. */
 export async function renderMarkdown(mdText, { title = 'Markdown' } = {}) {
   const md = new MarkdownIt({ html: true, linkify: true, typographer: true, breaks: false });
+
+  // Extract headings for outline
+  const headings = [];
+  const headingLevels = /^h([1-6])$/i;
 
   // Pre-render every mermaid block (async), keyed by its source.
   const tokens = md.parse(mdText || '', {});
@@ -82,16 +93,38 @@ export async function renderMarkdown(mdText, { title = 'Markdown' } = {}) {
     return defaultFence(toks, idx, options, env, self);
   };
 
+  // Override heading renderer to extract headings and add IDs
+  const defaultHeading = md.renderer.rules.heading_open
+    || ((toks, idx, options, env, self) => self.renderToken(toks, idx, options));
+  md.renderer.rules.heading_open = (toks, idx, options, env, self) => {
+    const token = toks[idx];
+    const match = token.tag.match(headingLevels);
+    if (match) {
+      const level = parseInt(match[1], 10);
+      // Find the heading text from the next token
+      const nextToken = toks[idx + 1];
+      if (nextToken && nextToken.type === 'inline' && nextToken.content) {
+        const text = nextToken.content;
+        const id = slugify(text);
+        token.attrSet('id', id);
+        headings.push({ level, text, id });
+      }
+    }
+    return defaultHeading(toks, idx, options, env, self);
+  };
+
   const body = md.renderer.render(tokens, md.options, {});
-  return wrapDocument(body, title);
+  return wrapDocument(body, title, headings);
 }
 
-function wrapDocument(bodyHtml, title) {
+function wrapDocument(bodyHtml, title, headings = []) {
+  const headingsJson = escapeHtml(JSON.stringify(headings));
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="headings-data" content="${headingsJson}">
 <title>${escapeHtml(title)}</title>
 <style>
   :root { --ink:#1f2430; --muted:#6b7280; --line:#e6e8ee; --accent:#2741F1; --code-bg:#f5f6fa; }

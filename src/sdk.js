@@ -917,5 +917,19 @@
     }
   });
 
-  window.parent.postMessage({ [TAG]: true, type: 'sdk-ready' }, '*');
+  // Extract headings for outline
+  function extractHeadings() {
+    const headingsData = document.querySelector('meta[name="headings-data"]');
+    if (headingsData && headingsData.content) {
+      try {
+        return JSON.parse(headingsData.content);
+      } catch (e) {
+        console.error('[annotron-sdk] failed to parse headings:', e);
+      }
+    }
+    return [];
+  }
+
+  const headings = extractHeadings();
+  window.parent.postMessage({ [TAG]: true, type: 'sdk-ready', headings }, '*');
 })();

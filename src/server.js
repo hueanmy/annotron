@@ -359,7 +359,10 @@ async function handler(req, res) {
         if (existing) {
           // Add new message to existing thread
           if (!existing.thread) existing.thread = [];
-          if (item.note) existing.thread.push(humanMsg(item.note));
+          // A retry re-sends the original instruction (already in the thread) —
+          // just clear the failed flag; don't append a duplicate human message.
+          if (item.retry) delete existing.applyFailed;
+          else if (item.note) existing.thread.push(humanMsg(item.note));
           if (item.kind === 'text') {
             existing.textStart = Number.isInteger(item.textStart) ? item.textStart : existing.textStart ?? null;
             existing.textEnd = Number.isInteger(item.textEnd) ? item.textEnd : existing.textEnd ?? null;
@@ -452,6 +455,23 @@ async function handler(req, res) {
     return send(res, 200, { ok: true });
   }
 
+  if (pathname === '/done' && method === 'POST') {
+    // Mark the review finished: no file is written (Save/Finalize already did
+    // that) — this just ends the agent's poll loop cleanly so it can exit, and
+    // tells the browser the session is over. Callers usually follow with /stop.
+    const body = await readBody(req);
+    const file = body.file;
+    if (!file) return send(res, 400, { error: 'missing file' });
+    const abs = path.resolve(file);
+    if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
+    const sess = getSession(abs);
+    sess.finalized = true;
+    sess.working = false;
+    wakePoll(abs, { finalized: true });
+    broadcastSSE(abs, 'session-done', '{}');
+    return send(res, 200, { ok: true });
+  }
+
   if (pathname === '/agent-reply' && method === 'POST') {
     const body = await readBody(req);
     const file = body.file;
@@ -466,11 +486,23 @@ async function handler(req, res) {
       const ann = sidecar.annotations.find(a => a.id === body.annotationId);
       if (ann) {
         if (!ann.thread) ann.thread = [];
-        ann.thread.push({ role: 'agent', message: body.message, timestamp: new Date().toISOString() });
+        const now = new Date().toISOString();
+        ann.thread.push({ role: 'agent', message: body.message, timestamp: now });
+        // A comment the agent successfully acted on is considered resolved — the
+        // UI moves it to the History tab, timestamped so the reviewer can track
+        // it. A failed apply (body.failed) stays open and is flagged so the UI
+        // can red-border it and offer a Retry.
+        if (!body.failed) {
+          ann.status = 'resolved';
+          ann.resolvedAt = now;
+          delete ann.applyFailed;
+        } else {
+          ann.applyFailed = true;
+        }
         writeSidecar(abs, sidecar);
       }
     }
-    broadcastSSE(abs, 'agent-reply', JSON.stringify({ message: body.message, annotationId: body.annotationId || null }));
+    broadcastSSE(abs, 'agent-reply', JSON.stringify({ message: body.message, annotationId: body.annotationId || null, failed: !!body.failed }));
     return send(res, 200, { ok: true });
   }
 
