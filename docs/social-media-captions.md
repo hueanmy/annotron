@@ -11,16 +11,16 @@ Zero-Token Loop Engineering 🔄
 📝 Markdown artifact
 🌐 View HTML (offline)
 👆 Click/comment (no API call)
-⚡ AI sửa ngay
+⚡ AI applies instantly
 💾 Save markdown (offline)
 
-1 prompt = 10 vòng lặp
+1 prompt = 10 feedback loops
 0 token waste
 0 setup needed
 
-Diagram UML? Mermaid? Offline ✅
+UML diagrams? Mermaid? All offline ✅
 
-Đó là annotron.
+That's annotron.
 
 youtube.com/@studyingwithmeii
 
@@ -29,9 +29,9 @@ youtube.com/@studyingwithmeii
 
 ### Caption Set 2 (Token Cost Savings)
 ```
-Bạn đang burn token trên feedback? 🔥
+Burning tokens on feedback? 🔥
 
-Mỗi lần feedback = new prompt = $0.01-0.10
+Each feedback round = new prompt = $0.01-0.10
 
 annotron: Click/comment = $0.00
 
@@ -50,16 +50,16 @@ Try: youtube.com/@studyingwithmeii
 
 ### Caption Set 3 (Loop Engineering Speed)
 ```
-Tốc độ feedback loop 🚀
+Feedback loop speed 🚀
 
-Cũ: Email (24h) → Slack (2h) → Eventually: fixed
-Mới: annotron (10s) → AI applies → Next iteration
+Old: Email (24h) → Slack (2h) → Eventually: fixed
+New: annotron (10s) → AI applies → Next iteration
 
-Đó là loop engineering = tight cycles = better results.
+That's loop engineering = tight cycles = better results.
 
-Open source. Không phí. Hoạt động offline.
+Open source. Free. Works offline.
 
-Xem demo: youtube.com/@studyingwithmeii
+See demo: youtube.com/@studyingwithmeii
 
 #LoopEngineering #AI #Productivity #OpenSource
 ```
@@ -83,40 +83,40 @@ annotron
 
 ### Caption 1
 ```
-Feedback loop mới? 🎯
+New feedback loop? 🎯
 
-Từ giờ, không cần viết feedback dài:
+No more long feedback messages:
 • Click element → Add note → AI applies → Done
 
-Tất cả trong 1 ứng dụng, offline, miễn phí.
+All in one app, offline, free.
 
-Perfect cho:
+Perfect for:
 ✓ Architecture diagrams
 ✓ Tech specs  
 ✓ UI/UX mockups
-✓ Bất kỳ tài liệu AI nào
+✓ Any AI-generated document
 
-Xem demo ở YouTube: @studyingwithmeii
+See demo on YouTube: @studyingwithmeii
 
-Link GitHub ở bio 🔗
+GitHub link in bio 🔗
 
 #AI #WebDevelopment #OpenSource #Coding
 ```
 
 ### Caption 2
 ```
-Gặp lỗi feedback? 🐛
+Tired of unclear feedback? 🐛
 
-Cách cũ: Describe → wait → guess what they meant
-Cách mới: Point & click 👆
+Old way: Describe → wait → guess what they meant
+New way: Point & click 👆
 
-annotron là annotation tool cho AI age.
+annotron is the annotation tool for the AI age.
 
 Inspired by Google Docs. Built for AI agents.
 
 Open source & offline 🔐
 
-Learn more → link bio
+Learn more → link in bio
 
 #DevTools #AI #OpenSource #Productivity
 ```

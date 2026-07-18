@@ -1,24 +1,24 @@
-# TikTok Script Tiếng Việt - annotron
+# TikTok Scripts - annotron
 
 ## Version 1: Zero-Token Loop Engineering (15s) ⭐ RECOMMENDED
 
 ```
-[Tông: Vui vẻ, năng động]
+[Tone: Upbeat, energetic]
 
-Markdown artifact → Xem HTML → Click/comment → AI sửa ngay.
+Markdown artifact → View HTML → Click/comment → AI applies instantly.
 
-Tất cả OFFLINE. Zero token cost. Không cần prompt lại.
+All OFFLINE. Zero token cost. No new prompts needed.
 
-Diagram UML? Mermaid? Cũng không tốn token 📊
+UML diagrams? Mermaid? No token cost either 📊
 
-Done → Save lại markdown. Xong.
+Done → Save back to markdown. Complete.
 
-Đó là loop engineering.
+That's loop engineering.
 
 #LoopEngineering #AI #TokenEfficient #OpenSource
 ```
 
-**Thời lượng:** ~15 giây
+**Duration:** ~15 seconds
 **Focus:** Token efficiency + feedback loop speed + UML support
 
 ---
@@ -26,28 +26,28 @@ Done → Save lại markdown. Xong.
 ## Version 2: Token Efficiency (18s) — For Claude/API Users
 
 ```
-[Tông: Tech-focused, excited]
+[Tone: Tech-focused, excited]
 
-Đang dùng Claude? Đang burn token trên feedback loop?
+Using Claude? Burning tokens on feedback loops?
 
 annotron = zero-token loop engineering.
 
 📝 Markdown artifact
 🌐 View as HTML (offline)
 👆 Click → Add note (no AI call)
-⚡ Agent sửa direct (1 prompt = nhiều vòng lặp)
+⚡ Agent applies directly (1 prompt = many feedback loops)
 💾 Save markdown (offline)
 
-Support mermaid diagram, UML — tất cả OFFLINE.
+Support mermaid diagram, UML — all OFFLINE.
 
-Giảm token 80%. Giảm feedback time 90%.
+80% token reduction. 90% faster feedback cycles.
 
 youtube.com/@studyingwithmeii
 
 #LoopEngineering #AI #TokenEfficient #CostSaving
 ```
 
-**Thời lượng:** ~18 giây
+**Duration:** ~18 seconds
 **Focus:** Token efficiency for AI agents (Claude, OpenAI users)
 
 ---
@@ -55,21 +55,21 @@ youtube.com/@studyingwithmeii
 ## Version 3: Loop Engineering Ultra-Short (12s)
 
 ```
-[Tông: Direct, confident]
+[Tone: Direct, confident]
 
-Loop engineering cho AI feedback:
+Loop engineering for AI feedback:
 
-❌ Cũ: Email → chờ → lặp lại
-✅ Mới: Click → sửa ngay → lặp lại
+❌ Old: Email → wait → repeat
+✅ New: Click → apply instantly → repeat
 
-annotron là loop engineering.
+annotron is loop engineering.
 
-Xem demo → youtube.com/@studyingwithmeii
+See demo → youtube.com/@studyingwithmeii
 
 #LoopEngineering #AI #DevTools
 ```
 
-**Thời lượng:** ~12 giây
+**Duration:** ~12 seconds
 **Focus:** Loop engineering concept, before/after comparison
 
 ---
@@ -77,62 +77,62 @@ Xem demo → youtube.com/@studyingwithmeii
 ## Version 4: Loop Engineering + Demo (20s)
 
 ```
-[Tông: Thuyết minh, hứng thú]
+[Tone: Narrative, enthusiastic]
 
-Đây là loop engineering — feedback loop thắt chặt giữa con người và AI.
+This is loop engineering — tight feedback cycles between humans and AI.
 
 [B-roll: click element]
 
-Bạn click, ghi chú.
+You click, add a note.
 
 [B-roll: AI processes]
 
-AI hiểu ngay.
+AI understands instantly.
 
 [B-roll: content updates]
 
-Cập nhật lập tức. 
+Updates immediately. 
 
-Lặp lại cho đến hoàn hảo — không cần email, không cần chờ.
+Repeat until perfect — no email, no waiting.
 
 annotron = feedback loops that work.
 
-Xem đầy đủ demo: youtube.com/@studyingwithmeii
+See full demo: youtube.com/@studyingwithmeii
 
 #LoopEngineering #AI #DevTools #FutureOfWork
 ```
 
-**Thời lượng:** ~20 giây
+**Duration:** ~20 seconds
 **Focus:** Loop engineering foundation + live demo of workflow
 
 ## Version 5: Token Savings (13s) — Cost Focus
 
 ```
-[Tông: Direct, calculated]
+[Tone: Direct, calculated]
 
-Bạn làm gì mỗi lần feedback? Gõ prompt mới.
+What do you do each feedback round? Type a new prompt.
 
 💸 Cost: $0.01-$0.10 per prompt
 ⏱️ Time: 30 second wait
 
-annotron: Click & comment. Agent gets it ngay lập tức.
+annotron: Click & comment. Agent gets it instantly.
 
 💸 Cost: $0 (offline)
 ⏱️ Time: 2 seconds
 
-Một prompt = 10 vòng lặp.
+One prompt = 10 feedback loops.
 
-Token & time cân bằng.
+Token & time, perfectly balanced.
 
 #LoopEngineering #TokenEfficient #AI #CostSaving
 ```
 
-**Thời lượng:** ~13 giây
+**Duration:** ~13 seconds
 **Focus:** ROI for LLM API users (Claude, OpenAI pricing impact)
 
 ---
 
-## Hashtags Cho TikTok Vietnam
+## Hashtags for TikTok
 
 **Primary (Loop Engineering + Token Efficiency):**
 - #LoopEngineering #TokenEfficient #AI #CostSaving
@@ -153,7 +153,7 @@ Token & time cân bằng.
 - #TechVietnam #VietnamDevCommunity
 
 **Trending (change weekly):**
-- Check TikTok Discover for trending sounds/hashtags in Vietnam
+- Check TikTok Discover for trending sounds/hashtags in your region
 - Mix #LoopEngineering + #TokenEfficient with #FYP #ForYou #Viral tags
 
 ---
@@ -162,41 +162,41 @@ Token & time cân bằng.
 
 ### Short Caption (Best for Algorithm) - Loop Engineering Focus
 ```
-Loop engineering là đây 🔄
+Here's loop engineering 🔄
 
-Click → comment → AI sửa ngay → lặp lại
+Click → comment → AI applies instantly → repeat
 
-Feedback loop thắt chặt. Không cần email. Không cần chờ.
+Tight feedback loop. No email. No waiting.
 
-Xem demo: youtube.com/@studyingwithmeii
+See demo: youtube.com/@studyingwithmeii
 
 #LoopEngineering #AI
 ```
 
 ### Engaging Caption - Loop Engineering Concept
 ```
-Khái niệm: Loop Engineering
+Concept: Loop Engineering
 
-Feedback loop thắt chặt giữa con người & AI. 
-Giảm vòng lặp từ ngày xuống giây.
+Tight feedback cycles between humans & AI. 
+Reduce iteration time from days to seconds.
 
-annotron = loop engineering cho mọi người.
+annotron = loop engineering for everyone.
 
-Demo ở bio 👆
+Demo in bio 👆
 
 #LoopEngineering #AI #DevTools
 ```
 
 ### Call-to-Action Caption - Full Loop Engineering Pitch
 ```
-Loop engineering là tương lai của AI collaboration 🚀
+Loop engineering is the future of AI collaboration 🚀
 
-❌ Cũ: Email feedback → chờ → lặp lại
-✅ Mới: Click → AI sửa ngay → lặp lại
+❌ Old: Email feedback → wait → repeat
+✅ New: Click → AI applies → repeat
 
 annotron = tight feedback loops. Zero friction.
 
-Cách hoạt động: youtube.com/@studyingwithmeii
+How it works: youtube.com/@studyingwithmeii
 Code: github.com/hueanmy/annotron
 
 #LoopEngineering #AI #OpenSource #Automation
@@ -208,15 +208,15 @@ Code: github.com/hueanmy/annotron
 
 ### B-Roll Timeline (for 15-18s video)
 
-**0-2s:** Hook — người dùng thất vọng với feedback chậm
-**2-5s:** Show problem — email feedback, Slack messages, v.v.
-**5-8s:** Transition — "annotron giải quyết..."
+**0-2s:** Hook — user frustrated with slow feedback
+**2-5s:** Show problem — email feedback, Slack messages, etc.
+**5-8s:** Transition — "annotron solves this..."
 **8-12s:** Show solution — click → comment → apply
 **12-15s:** Show result — live update, smooth flow
-**15-18s:** CTA — "Link ở bio" hoặc "Subscribe"
+**15-18s:** CTA — "Link in bio" or "Subscribe"
 
 ### Sound/Music
-- Use trending TikTok sounds + Vietnamese voiceover
+- Use trending TikTok sounds + voiceover
 - OR: Upload ElevenLabs voiceover + royalty-free background music
 - Sync transitions with beat drops
 
@@ -226,18 +226,18 @@ Code: github.com/hueanmy/annotron
 
 ### Thumbnail Ideas
 - Screen recording showing annotation
-- Split screen: "Lúc trước vs Bây giờ"
+- Split screen: "Before vs After"
 - Text overlay: "Feedback in 1 click"
 
 ---
 
 ## Posting Strategy
 
-**Best times (Vietnam timezone):**
-- 7-9 AM (breakfast scrolling)
+**Best times (adjust for your timezone):**
+- 7-9 AM (morning/breakfast)
 - 12-1 PM (lunch break)
 - 6-8 PM (evening break)
-- 9-11 PM (late night)
+- 9-11 PM (night scrolling)
 
 **Post Frequency:** 3-5 times per week for algorithm boost
 
