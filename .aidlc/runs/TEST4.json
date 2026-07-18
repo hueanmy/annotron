@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "runId": "TEST4",
+  "pipelineId": "sdlc-parallel-full",
+  "context": {
+    "epic": "TEST4",
+    "core-business": "docs/core"
+  },
+  "startedAt": "2026-07-16T18:03:08.868Z",
+  "updatedAt": "2026-07-16T18:03:08.869Z",
+  "currentStepIdx": 0,
+  "status": "running",
+  "steps": [
+    {
+      "stepIdx": 0,
+      "agent": "aidlc-po",
+      "revision": 1,
+      "status": "awaiting_work",
+      "startedAt": "2026-07-16T18:03:08.868Z",
+      "artifactsProduced": []
+    },
+    {
+      "stepIdx": 1,
+      "agent": "aidlc-tech-lead",
+      "revision": 1,
+      "status": "pending",
+      "artifactsProduced": []
+    },
+    {
+      "stepIdx": 2,
+      "agent": "aidlc-qa",
+      "revision": 1,
+      "status": "pending",
+      "artifactsProduced": []
+    },
+    {
+      "stepIdx": 3,
+      "agent": "aidlc-developer",
+      "revision": 1,
+      "status": "pending",
+      "artifactsProduced": []
+    },
+    {
+      "stepIdx": 4,
+      "agent": "aidlc-qa",
+      "revision": 1,
+      "status": "pending",
+      "artifactsProduced": []
+    },
+    {
+      "stepIdx": 5,
+      "agent": "aidlc-qa",
+      "revision": 1,
+      "status": "pending",
+      "artifactsProduced": []
+    }
+  ]
+}

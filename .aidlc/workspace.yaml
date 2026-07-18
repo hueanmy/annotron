@@ -1,0 +1,249 @@
+version: "1.0"
+name: annotron
+agents:
+  - id: aidlc-po
+    name: Po
+    skills:
+      - aidlc-prd
+    model: claude-opus-4-7
+    description: po persona — handles plan
+    capabilities:
+      - jira
+      - figma
+      - core-business
+      - web
+  - id: aidlc-tech-lead
+    name: Tech Lead
+    skills:
+      - aidlc-tech-design
+    model: claude-opus-4-7
+    description: tech-lead persona — handles design
+    capabilities:
+      - files
+      - github
+      - core-business
+  - id: aidlc-qa
+    name: Qa
+    skills:
+      - aidlc-test-plan
+      - aidlc-generate-test-cases
+      - aidlc-execute-test
+      - aidlc-test-report
+    model: claude-sonnet-4-6
+    description: qa persona — handles test-plan, generate-test-cases, execute-test
+    capabilities:
+      - files
+      - jira
+      - core-business
+      - its
+  - id: aidlc-developer
+    name: Developer
+    skills:
+      - aidlc-implement
+      - aidlc-unit-test
+    model: claude-sonnet-4-6
+    description: developer persona — handles implement
+    capabilities:
+      - files
+      - github
+skills:
+  - id: aidlc-prd
+    path: ~/.claude/skills/aidlc-prd.md
+  - id: aidlc-tech-design
+    path: ~/.claude/skills/aidlc-tech-design.md
+  - id: aidlc-test-plan
+    path: ~/.claude/skills/aidlc-test-plan.md
+  - id: aidlc-implement
+    path: ~/.claude/skills/aidlc-implement.md
+  - id: aidlc-unit-test
+    path: ~/.claude/skills/aidlc-unit-test.md
+  - id: aidlc-generate-test-cases
+    path: ~/.claude/skills/aidlc-generate-test-cases.md
+  - id: aidlc-execute-test
+    path: ~/.claude/skills/aidlc-execute-test.md
+  - id: aidlc-test-report
+    path: ~/.claude/skills/aidlc-test-report.md
+environment: {}
+slash_commands:
+  - name: /sdlc-parallel-full-plan
+    agent: aidlc-po
+  - name: /sdlc-parallel-full-design
+    agent: aidlc-tech-lead
+  - name: /sdlc-parallel-full-test-plan
+    agent: aidlc-qa
+  - name: /sdlc-parallel-full-implement
+    agent: aidlc-developer
+  - name: /sdlc-parallel-full-generate-test-cases
+    agent: aidlc-qa
+  - name: /sdlc-parallel-full-execute-test
+    agent: aidlc-qa
+pipelines:
+  - id: sdlc-parallel-full
+    steps:
+      - name: plan
+        agent: aidlc-po
+        skills:
+          - aidlc-prd
+        enabled: true
+        requires: []
+        produces:
+          - docs/epics/{epic}/artifacts/PRD.md
+        human_review: true
+        auto_review: false
+      - name: design
+        agent: aidlc-tech-lead
+        skills:
+          - aidlc-tech-design
+        enabled: true
+        requires: []
+        produces:
+          - docs/epics/{epic}/artifacts/TECH-DESIGN.md
+        human_review: true
+        auto_review: false
+        depends_on:
+          - plan
+      - name: test-plan
+        agent: aidlc-qa
+        skills:
+          - aidlc-test-plan
+        enabled: true
+        requires: []
+        produces:
+          - docs/epics/{epic}/artifacts/TEST-PLAN.md
+        human_review: true
+        auto_review: false
+        depends_on:
+          - plan
+      - name: implement
+        agent: aidlc-developer
+        skills:
+          - aidlc-implement
+          - aidlc-unit-test
+        enabled: true
+        requires: []
+        produces: []
+        human_review: true
+        auto_review: true
+        depends_on:
+          - design
+        auto_review_runner: .aidlc/validators/ci.mjs
+      - name: generate-test-cases
+        agent: aidlc-qa
+        skills:
+          - aidlc-generate-test-cases
+        enabled: true
+        requires: []
+        produces:
+          - docs/epics/{epic}/artifacts/TEST-CASES.md
+        human_review: true
+        auto_review: false
+        depends_on:
+          - test-plan
+      - name: execute-test
+        agent: aidlc-qa
+        skills:
+          - aidlc-execute-test
+          - aidlc-test-report
+        enabled: true
+        requires: []
+        produces:
+          - docs/epics/{epic}/artifacts/TEST-SCRIPT.md
+        human_review: true
+        auto_review: false
+        depends_on:
+          - implement
+          - generate-test-cases
+    on_failure: stop
+  - id: GH-71
+    steps:
+      - agent: aidlc-tech-lead
+        name: design
+        enabled: true
+        produces:
+          - docs/epics/{epic}/artifacts/TECH-DESIGN.md
+        requires: []
+        depends_on: []
+        auto_review: false
+        human_review: true
+        skills:
+          - aidlc-tech-design
+      - agent: aidlc-developer
+        name: implement
+        enabled: true
+        produces: []
+        requires: []
+        depends_on:
+          - design
+        auto_review: true
+        human_review: true
+        skills:
+          - aidlc-implement
+          - aidlc-unit-test
+        auto_review_runner: .aidlc/validators/ci.mjs
+      - agent: aidlc-qa
+        name: execute-test
+        enabled: true
+        produces:
+          - docs/epics/{epic}/artifacts/TEST-SCRIPT.md
+        requires: []
+        depends_on:
+          - implement
+        auto_review: false
+        human_review: true
+        skills:
+          - aidlc-execute-test
+          - aidlc-test-report
+    on_failure: stop
+state:
+  entity: epic
+  root: docs/epics
+sidebar:
+  views:
+    - type: agents-list
+    - type: skills-list
+    - type: pipelines-list
+recipes:
+  - id: bugfix
+    description: Small fix with verification — implement then run tests.
+    from: sdlc-parallel-full
+    steps:
+      - implement
+      - execute-test
+  - id: small-feature
+    description: Plan, build, verify. Skips formal design + test-case authoring.
+    from: sdlc-parallel-full
+    steps:
+      - plan
+      - implement
+      - execute-test
+  - id: refactor
+    description: Design-led change with verification, no new PRD.
+    from: sdlc-parallel-full
+    steps:
+      - design
+      - implement
+      - execute-test
+  - id: feature-parallel
+    description: Mid-size feature, QA track parallel to engineering (design ∥ test-plan).
+    from: sdlc-parallel-full
+    steps:
+      - plan
+      - design
+      - test-plan
+      - implement
+      - execute-test
+  - id: large-feature
+    description: "Full SDLC: plan → design ∥ test-plan → implement → test cases → execute."
+    from: sdlc-parallel-full
+    steps:
+      - plan
+      - design
+      - test-plan
+      - implement
+      - generate-test-cases
+      - execute-test
+  - id: spike
+    description: Exploration only — produce a PRD / findings doc.
+    from: sdlc-parallel-full
+    steps:
+      - plan

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "annotations": [
+    {
+      "id": "ann_y134e1u",
+      "kind": "text",
+      "selector": "body",
+      "label": "\"Epic ID: CF-482   Author: Product Owner   Status: In Review \"",
+      "text": "Epic ID: CF-482   Author: Product Owner   Status: In Review   Created: Jul 18, 2026",
+      "textStart": 35,
+      "textEnd": 118,
+      "textPrefix": "lk Asset Review Queue\n  ",
+      "textSuffix": "\n  \n\n  1. Problem Statem",
+      "thread": [
+        {
+          "role": "human",
+          "message": "sdfsdfs",
+          "timestamp": "2026-07-18T04:07:48.491Z"
+        },
+        {
+          "role": "human",
+          "message": "tét",
+          "timestamp": "2026-07-18T05:14:07.298Z"
+        }
+      ],
+      "createdAt": "2026-07-18T04:07:48.491Z",
+      "status": "resolved"
+    }
+  ],
+  "rounds": []
+}

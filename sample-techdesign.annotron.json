@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "annotations": [
+    {
+      "id": "ann_mb4ngab",
+      "kind": "text",
+      "selector": "body > p:nth-of-type(2)",
+      "label": "\"dedicated\"",
+      "text": "dedicated",
+      "textStart": 12,
+      "textEnd": 21,
+      "textPrefix": "Introduce a ",
+      "textSuffix": " presence service so cli",
+      "thread": [
+        {
+          "role": "human",
+          "message": "test",
+          "timestamp": "2026-07-18T05:15:59.412Z"
+        }
+      ],
+      "createdAt": "2026-07-18T05:15:59.412Z",
+      "status": "open"
+    }
+  ],
+  "rounds": []
+}

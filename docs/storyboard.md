@@ -1,56 +1,58 @@
 # Storyboard for annotron Video Teaser
 
-## 15-Second Version (TikTok/YouTube Shorts)
+## 15-Second Version (TikTok/YouTube Shorts) - LOOP ENGINEERING FOCUS
 
 ```
-SCENE 1: Hook (0-2s)
+SCENE 1: Concept Introduction (0-2s)
 ┌─────────────────────────────────────┐
-│ Screen: Laptop with confused face   │
-│ Text overlay: "Feedback chậm?"      │
-│ Sound: Problem sound effect (sad)   │
-│ V.O.: "Bạn có từng..."              │
+│ Screen: Text appears "LOOP ENGINEERING"
+│ Animation: Circular loop motion     │
+│ Text overlay: Large, bold           │
+│ Sound: Energetic transition tone    │
+│ V.O.: "Loop engineering..."         │
 └─────────────────────────────────────┘
 
-SCENE 2: The Problem (2-4s)
+SCENE 2: The Old Loop (2-4s) - Broken Cycle
 ┌─────────────────────────────────────┐
-│ Screen: Multiple Slack/Email msgs   │
-│ Text: "Làm lại...", "Không hiểu"    │
-│ Animation: Messages pile up         │
-│ Sound: Notification sound (annoying)│
-│ V.O.: "...nhận feedback mà không"   │
+│ Screen: Email/Slack slow exchanges  │
+│ Animation: Slow circular motion     │
+│ Text: "❌ Email → Wait → Repeat"    │
+│ Sound: Slow, disappointing tone     │
+│ V.O.: "Feedback loop chậm..."       │
 └─────────────────────────────────────┘
 
-SCENE 3: Solution Intro (4-6s)
+SCENE 3: Tight Loop Introduction (4-6s)
 ┌─────────────────────────────────────┐
 │ Screen: annotron logo appears       │
-│ Text: "annotron" (bold, glowing)    │
-│ Animation: Fade-in with scale       │
-│ Sound: Transition/magic sound       │
-│ V.O.: "annotron giải quyết..."      │
+│ Text: "Tight Feedback Loop" (glow)  │
+│ Animation: FAST circular motion     │
+│ Sound: Uplifting, energetic tone    │
+│ V.O.: "annotron = tight loops"      │
 └─────────────────────────────────────┘
 
-SCENE 4: The Magic (6-10s)
+SCENE 4: The Loop Engineering Cycle (6-10s)
 ┌─────────────────────────────────────┐
 │ Screen: annotron UI with document   │
-│ Action 1: Cursor clicks element     │
-│ Text: "Click"                       │
-│ Animation: Highlight element        │
+│ Animation: Circular loop overlay    │
+│                                     │
+│ Loop Step 1: Click (6-7s)           │
+│ Text: "1️⃣ Click element"            │
 │ V.O.: "Click vào đâu..."            │
 │                                     │
-│ Action 2: Comment popup appears     │
-│ Text: "Type comment"                │
-│ Animation: Comment appear smoothly  │
-│ V.O.: "...ghi chú là đây..."        │
+│ Loop Step 2: Annotate (7-8s)        │
+│ Text: "2️⃣ Add note"                 │
+│ Animation: Comment popup            │
+│ V.O.: "...ghi chú..."               │
 │                                     │
-│ Action 3: AI processes (spinner)    │
-│ Text: "AI applying..." (teal)       │
-│ Animation: Spinner animation        │
-│ V.O.: "...AI agent sửa liền"        │
+│ Loop Step 3: Process (8-9s)         │
+│ Text: "3️⃣ AI applies" (teal)       │
+│ Animation: Processing spinner       │
+│ V.O.: "...AI hiểu ngay sửa..."      │
 │                                     │
-│ Action 4: Document updates          │
-│ Text: "Instant result" (green)      │
-│ Animation: Content changes smoothly │
-│ V.O.: "...kết quả liền lập tức"    │
+│ Loop Step 4: Preview (9-10s)        │
+│ Text: "4️⃣ See result" (green)      │
+│ Animation: Content updates + loop back
+│ V.O.: "...lặp lại cho hoàn hảo"    │
 └─────────────────────────────────────┘
 
 SCENE 5: CTA (10-12s)
@@ -155,14 +157,31 @@ SCENE 11: CTA (18-20s)
 
 ---
 
-## Visual Elements & Assets Needed
+## Loop Engineering Visual Elements ⭐
+
+### Core Loop Graphics
+- [ ] **Circular loop animation** - Central concept visual
+  - Start at "Click" → Annotate → AI processes → Result → back to Click
+  - Use arrow/chevron symbols to show flow
+  - Color: Purple (#667eea) to Teal (#48d1cc) gradient
+  - Rotate continuously during loop sequences
+
+- [ ] **Speed comparison graphics**
+  - "❌ Old loop" - Slow, heavy arrows
+  - "✅ New loop" - Fast, light arrows, rapid animation
+
+- [ ] **Loop counter/timer**
+  - Show elapsed time: "Old: 2 days → New: 2 seconds"
+
+### Visual Elements & Assets Needed
 
 ### Graphics to Create/Use
 - [ ] annotron logo (already have)
+- [ ] **Loop engineering icon** - Circular arrows (new!)
 - [ ] Feature icons: 💬 🤖 ⚡ 🔄 ✅
-- [ ] Transition effects (dissolve, slide)
-- [ ] Text overlays (titles, captions)
-- [ ] Color scheme: Purple (#667eea) + Teal accents
+- [ ] Transition effects (dissolve, slide, circular wipe)
+- [ ] Text overlays (titles, captions, loop labels)
+- [ ] Color scheme: Purple (#667eea) + Teal accents + Green (success)
 
 ### Screen Recordings Needed
 - [ ] annotron clicking on element

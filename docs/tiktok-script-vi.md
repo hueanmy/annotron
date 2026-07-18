@@ -1,147 +1,173 @@
 # TikTok Script Tiếng Việt - annotron
 
-## Version 1: Focused on Pain Point (15s)
+## Version 1: Loop Engineering Focus (15s) ⭐ RECOMMENDED
 
 ```
 [Tông: Vui vẻ, năng động]
 
-Bạn có từng nhận feedback như: "Làm lại cái này" mà không biết phải thay đổi gì không?
+Đây là loop engineering — feedback loop mới cho AI.
 
-annotron giải quyết điều đó. Bạn click vào đâu, ghi chú là đây — AI agent sửa liền.
+Thay vì: "Làm lại cái này" → chờ → lặp lại
+Bây giờ: Click → ghi chú → AI sửa ngay → lặp lại
 
-Tất cả diễn ra TRỰC TIẾP trong trình duyệt. Không cần email, không cần chờ.
+Tất cả trong 1 cửa sổ, offline, không cần setup.
 
-Kết quả? Lặp đi lặp lại đến khi hoàn hảo. 
+annotron = feedback loops that actually work.
 
-#Coding #AI #ProductivityHack #OpenSource
+#LoopEngineering #AI #Coding #OpenSource
 ```
 
 **Thời lượng:** ~15 giây
+**Focus:** Loop engineering concept, tight feedback cycles
 
 ---
 
-## Version 2: Feature Showcase (18s)
+## Version 2: Loop Engineering Detailed (18s)
 
 ```
 [Tông: Nhanh nhẹn, hóm hỉnh]
 
-Giới thiệu annotron — trình soạn thảo thông minh cho AI.
+Khái niệm mới: Loop Engineering — feedback loop thắt chặt giữa con người và AI.
 
-Thay vì gõ feedback dài dòng:
+annotron = loop engineering cho mọi người.
 
-1️⃣ Click vào đâu → thêm comment
-2️⃣ AI tự động sửa lại
+Cách hoạt động:
+1️⃣ Click element → thêm note
+2️⃣ AI tự động hiểu & sửa
 3️⃣ Thấy kết quả ngay lập tức
-4️⃣ Lặp lại cho đến khoẻ
+4️⃣ Lặp lại cho đến hoàn hảo
 
-Hoạt động offline, không cần account, code nguồn mở.
+Không cần email. Không cần chờ. Không cần giải thích.
 
-Xem full demo trên YouTube — link ở bio 👆
+Xem full demo: youtube.com/@studyingwithmeii
 
-#WebDev #AI #OpenSource #Coding #ProductTip
+#LoopEngineering #AI #DevTools #Automation
 ```
 
 **Thời lượng:** ~18 giây
+**Focus:** Loop engineering concept + precise workflow
 
 ---
 
-## Version 3: Problem-Solution (12s - Ultra Short)
+## Version 3: Loop Engineering Ultra-Short (12s)
 
 ```
 [Tông: Direct, confident]
 
-Feedback chậm? Lặp đi lặp lại khó chịu?
+Loop engineering cho AI feedback:
 
-annotron = click → comment → AI sửa ngay → xem kết quả.
+❌ Cũ: Email → chờ → lặp lại
+✅ Mới: Click → sửa ngay → lặp lại
 
-Tất cả trong 1 cửa sổ. Tất cả tự động.
+annotron là loop engineering.
 
-Xem demo → (link YouTubeở phía dưới)
+Xem demo → youtube.com/@studyingwithmeii
 
-#ProductivityHack #AI #Coding
+#LoopEngineering #AI #DevTools
 ```
 
 **Thời lượng:** ~12 giây
+**Focus:** Loop engineering concept, before/after comparison
 
 ---
 
-## Version 4: Demo-Driven (20s)
+## Version 4: Loop Engineering + Demo (20s)
 
 ```
 [Tông: Thuyết minh, hứng thú]
 
-Nhìn đây — annotation trực tiếp trên file được AI tạo ra.
+Đây là loop engineering — feedback loop thắt chặt giữa con người và AI.
 
 [B-roll: click element]
 
-Comment thêm ý kiến.
+Bạn click, ghi chú.
 
-[B-roll: feedback apply]
+[B-roll: AI processes]
 
-AI tự động cập nhật. Đó là cách làm việc thông minh.
+AI hiểu ngay.
 
-Không phải gõ hàng loạt email. Không phải chờ đợi. Mọi thứ lập tức.
+[B-roll: content updates]
 
-Đó là annotron. Download trên GitHub hoặc xem demo trên YouTube.
+Cập nhật lập tức. 
 
-Link: youtube.com/@studyingwithmeii
+Lặp lại cho đến hoàn hảo — không cần email, không cần chờ.
 
-#AI #OpenSource #DevTools #Productivity
+annotron = feedback loops that work.
+
+Xem đầy đủ demo: youtube.com/@studyingwithmeii
+
+#LoopEngineering #AI #DevTools #FutureOfWork
 ```
 
 **Thời lượng:** ~20 giây
+**Focus:** Loop engineering foundation + live demo of workflow
 
 ---
 
 ## Hashtags Cho TikTok Vietnam
 
+**Primary (Loop Engineering Focus):**
+- #LoopEngineering #FeedbackLoop #AI #DevTools
+- #AIAgent #Automation #AIDrivenDevelopment
+
 **High Reach:**
-- #AI #Coding #OpenSource #Python #WebDev
-- #ProductivityHack #DevTools #FullStack
+- #AI #Coding #OpenSource #WebDev
+- #ProductivityHack #FullStack
 - #StartupTools #TechTips #SoftwareDevelopment
 
 **Niche + Reach:**
-- #ClaudeAI #AIAgent #Automation
+- #ClaudeAI #AIAgent #LLMDevelopment
 - #VietnameseTech #LapTrinhViet #CoderLife
+- #AgentEngineering #PromptEngineering
 
 **Trending (change weekly):**
 - Check TikTok Discover for trending sounds/hashtags in Vietnam
+- Mix #LoopEngineering with trending #FYP #ForYou tags
 
 ---
 
 ## Caption Suggestions For Posts
 
-### Short Caption (Best for Algorithm)
+### Short Caption (Best for Algorithm) - Loop Engineering Focus
 ```
-Thay feedback dài dòng bằng 1 cái click 👆
-Ai sửa ngay. Kết quả liền.
+Loop engineering là đây 🔄
 
-Xem full demo: youtube.com/@studyingwithmeii
-```
+Click → comment → AI sửa ngay → lặp lại
 
-### Engaging Caption
-```
-Bạn: "Làm lại cái này"
-annotron: "Ngay ạ, xem kết quả"
-🎯
+Feedback loop thắt chặt. Không cần email. Không cần chờ.
 
-Annotation thông minh cho AI. Open source, miễn phí.
-Demo link ở bio 👆
+Xem demo: youtube.com/@studyingwithmeii
+
+#LoopEngineering #AI
 ```
 
-### Call-to-Action Caption
+### Engaging Caption - Loop Engineering Concept
 ```
-Chán feedback không rõ ràng? 😩
+Khái niệm: Loop Engineering
 
-annotron là giải pháp:
-✅ Click để comment
-✅ AI tự sửa
-✅ Thấy ngay lập tức
+Feedback loop thắt chặt giữa con người & AI. 
+Giảm vòng lặp từ ngày xuống giây.
 
-Xem cách hoạt động: youtube.com/@studyingwithmeii
-Link: github.com/hueanmy/annotron
+annotron = loop engineering cho mọi người.
 
-#OpenSource #AI #DevTools
+Demo ở bio 👆
+
+#LoopEngineering #AI #DevTools
+```
+
+### Call-to-Action Caption - Full Loop Engineering Pitch
+```
+Loop engineering là tương lai của AI collaboration 🚀
+
+❌ Cũ: Email feedback → chờ → lặp lại
+✅ Mới: Click → AI sửa ngay → lặp lại
+
+annotron = tight feedback loops. Zero friction.
+
+Cách hoạt động: youtube.com/@studyingwithmeii
+Code: github.com/hueanmy/annotron
+
+#LoopEngineering #AI #OpenSource #Automation
 ```
 
 ---

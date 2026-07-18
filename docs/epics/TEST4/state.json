@@ -1,0 +1,81 @@
+{
+  "id": "TEST4",
+  "title": "",
+  "description": "",
+  "pipeline": "sdlc-parallel-full",
+  "agent": null,
+  "agents": [
+    "aidlc-po",
+    "aidlc-tech-lead",
+    "aidlc-qa",
+    "aidlc-developer",
+    "aidlc-qa",
+    "aidlc-qa"
+  ],
+  "currentStep": 0,
+  "status": "in_progress",
+  "createdAt": "2026-07-16T18:03:08.868Z",
+  "stepStates": [
+    {
+      "agent": "aidlc-po",
+      "status": "in_progress",
+      "revision": 1,
+      "runStatus": "awaiting_work",
+      "startedAt": "2026-07-16T18:03:08.868Z",
+      "finishedAt": null,
+      "history": [],
+      "artifactsProduced": []
+    },
+    {
+      "agent": "aidlc-tech-lead",
+      "status": "pending",
+      "revision": 1,
+      "runStatus": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "history": [],
+      "artifactsProduced": []
+    },
+    {
+      "agent": "aidlc-qa",
+      "status": "pending",
+      "revision": 1,
+      "runStatus": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "history": [],
+      "artifactsProduced": []
+    },
+    {
+      "agent": "aidlc-developer",
+      "status": "pending",
+      "revision": 1,
+      "runStatus": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "history": [],
+      "artifactsProduced": []
+    },
+    {
+      "agent": "aidlc-qa",
+      "status": "pending",
+      "revision": 1,
+      "runStatus": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "history": [],
+      "artifactsProduced": []
+    },
+    {
+      "agent": "aidlc-qa",
+      "status": "pending",
+      "revision": 1,
+      "runStatus": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "history": [],
+      "artifactsProduced": []
+    }
+  ],
+  "updatedAt": "2026-07-16T18:03:08.869Z"
+}

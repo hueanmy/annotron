@@ -4,65 +4,70 @@
 
 ## TikTok / YouTube Shorts
 
-### Caption Set 1 (Engaging, Hook-focused)
+### Caption Set 1 (Loop Engineering Focus)
 ```
-Chán feedback không rõ ràng? 😩
+Loop engineering là đây 🔄
 
-Thay vì viết hàng chục message, bạn chỉ cần:
-👆 Click vào đâu
-✍️ Ghi chú là đây
-⚡ AI sửa ngay lập tức
-📸 Thấy kết quả liền
+Thay vì: Email → chờ → lặp lại
+Bây giờ: Click → sửa ngay → lặp lại
 
-Đó là annotron — AI feedback loop thế hệ mới.
+✅ Tight feedback loops
+✅ Zero friction
+✅ AI feedback that works
+
+Đó là annotron.
 
 Xem full demo: youtube.com/@studyingwithmeii
 GitHub: github.com/hueanmy/annotron
 
-#AI #Coding #OpenSource #ProductivityHack
+#LoopEngineering #AI #Automation #OpenSource
 ```
 
-### Caption Set 2 (Curiosity-driven)
+### Caption Set 2 (Loop Engineering Education)
 ```
-Biết gì không? 👀
+Biết gì không? Loop engineering là gì? 👀
 
-Mọi AI feedback đều bắt đầu bằng cách này cũ kỹ:
-- Email dài dòng ❌
-- Slack ping liên tục ❌  
-- Mô tả bằng lời ❌
+= Feedback loop thắt chặt giữa con người & AI
 
-annotron: Click → Comment → Done ✅
+Cách cũ: Feedback → chờ vài giờ → edit → lặp lại
+Cách mới: Click → AI sửa ngay (vài giây) → lặp lại
 
-Xem cách hoạt động: [link ở bio]
+Giảm vòng lặp từ ngày xuống giây. Đó là loop engineering.
 
-#DevTools #AI #OpenSource
+annotron = loop engineering cho mọi người.
+
+Xem: youtube.com/@studyingwithmeii
+
+#LoopEngineering #AI #Automation #DevTools
 ```
 
-### Caption Set 3 (FOMO-focused)
+### Caption Set 3 (Loop Engineering Speed)
 ```
-Còn chờ gì nữa? 🚀
+Tốc độ feedback loop 🚀
 
-Feedback loop của bạn:
-❌ Cũ: Email → chờ → reply → chờ → fix
-✅ Mới: Click → AI fix → xem ngay → repeat
+Cũ: Email (24h) → Slack (2h) → Eventually: fixed
+Mới: annotron (10s) → AI applies → Next iteration
+
+Đó là loop engineering = tight cycles = better results.
 
 Open source. Không phí. Hoạt động offline.
 
-Xem demo trên YouTube — link ở bio 👆
+Xem demo: youtube.com/@studyingwithmeii
 
-#Coding #FullStack #ProductTip #AI
+#LoopEngineering #AI #Productivity #OpenSource
 ```
 
-### Caption Set 4 (Short & Direct - Best for Algorithm)
+### Caption Set 4 (Loop Engineering in 15 words)
 ```
-From: "Làm lại cái này"
-To: *Click* → AI sửa → Xong ✅
+Loop engineering = click → AI fix → repeat
 
-Thế là annotron.
+Fast feedback. Tight cycles. Better results.
+
+annotron
 
 [Link bio]
 
-#AI #DevTools #OpenSource
+#LoopEngineering #AI #DevTools #Automation
 ```
 
 ---
@@ -113,48 +118,66 @@ Learn more → link bio
 
 ## Twitter / X
 
-### Tweet 1 (Viral-potential)
+### Tweet 1 (Loop Engineering Concept)
 ```
-Just launched annotron 🚀
+Introducing loop engineering 🔄
 
-Point-and-click feedback for AI-generated artifacts. 
+The discipline of building tight feedback cycles between humans and AI.
 
-Instead of: "This looks off, fix it"
-Try: Click element → add note → AI applies changes instantly
+annotron is loop engineering for everyone:
+• Click element → add note
+• AI parses intent + context
+• Changes apply instantly
+• Repeat (seconds, not days)
 
-Zero setup. Open source. Runs locally.
-
-🔗 GitHub: github.com/hueanmy/annotron
-🎥 Demo: youtube.com/@studyingwithmeii
-
-#AI #OpenSource #DevTools
-```
-
-### Tweet 2 (Thread Starter)
-```
-How to give AI feedback that actually works 🧵
-
-1/ ❌ Old way: Describe in text
-   ✅ New way: Point & click
-
-2/ annotron gives you a browser editor for AI artifacts with:
-   - Point-and-click annotations
-   - Live feedback loops  
-   - Auto-apply changes
-   - Outline navigation
-
-3/ Why it's different:
-   ✓ Structured feedback (CSS selector + text + note)
-   ✓ AI understands immediately
-   ✓ Changes apply in seconds, not days
-   ✓ Runs local, no cloud, no accounts
-
-4/ Open source, MIT licensed, built with Node.
-
-Try it: github.com/hueanmy/annotron
+GitHub: github.com/hueanmy/annotron
 Demo: youtube.com/@studyingwithmeii
 
-RT if you've felt the pain of unclear feedback 👇
+#LoopEngineering #AI #OpenSource #DevTools
+```
+
+### Tweet 2 (Loop Engineering Thread)
+```
+Loop Engineering: Tight Feedback Cycles for AI 🧵
+
+1/ What is loop engineering?
+
+The discipline of building TIGHT feedback cycles between humans and AI agents.
+
+Goal: Seconds, not days. Precision, not prose.
+
+2/ The problem:
+Email: "This needs work" (ambiguous)
+↓ 1-2 hours later
+Slack: "What do you mean?"
+↓ 30 min later
+Finally: The actual feedback
+
+Result: Hours wasted, context lost.
+
+3/ The solution: annotron (loop engineering)
+
+You: Click element → Add note
+AI: Parses intent → Applies changes
+You: See result instantly → Click next element
+Repeat until perfect ✅
+
+4/ Why this matters:
+✓ 10x faster iteration
+✓ Precise feedback (selector + text + intent)
+✓ Live preview = instant confidence
+✓ Works offline = full control
+
+This is the future of human-AI collaboration.
+
+5/ Open source, MIT licensed, zero setup.
+
+GitHub: github.com/hueanmy/annotron
+Demo: youtube.com/@studyingwithmeii
+
+Questions about loop engineering? Reply below 👇
+
+#LoopEngineering #AI #AgentDevelopment #FutureOfWork
 ```
 
 ### Tweet 3 (Product Hunt style)
@@ -192,36 +215,40 @@ One question: How many feedback loops have you had to repeat?
 
 ## LinkedIn (Professional)
 
-### Post 1 (Thought Leadership)
+### Post 1 (Thought Leadership) - LOOP ENGINEERING FOCUS
 ```
-🎯 The Future of AI Feedback Loops
+🎯 Loop Engineering: The Future of AI Collaboration
 
-We spend too much time explaining feedback.
+We spend too much time explaining feedback to AI.
 
-"Can you move this to the left?"
-"Can you change the color to match the mockup?"
-"Can you add more spacing here?"
+The problem isn't the AI—it's the feedback loop.
 
-What if you could just... click?
+**Email:** 1-2 hours
+**Slack:** 30-60 minutes
+**annotron:** 10 seconds
 
-Introducing annotron, a browser-based review editor that brings point-and-click feedback to AI-generated artifacts.
+Introducing **loop engineering**: tight feedback cycles between humans and AI agents where precision meets speed.
 
-Instead of describing what you want, you annotate directly on the artifact. The AI agent reads your structured feedback and applies changes in real-time.
+annotron implements this:
+1. You annotate directly on the artifact (click, not email)
+2. AI reads structured feedback (selector, text, intent)
+3. Changes apply instantly (seconds, not hours)
+4. Repeat until perfect (frictionless iteration)
 
-Why this matters:
-✓ Faster iteration cycles (seconds, not hours)
-✓ Precise feedback (CSS selector + text, not prose)
-✓ Automatic application (no manual back-and-forth)
-✓ Human remains in control (review, approve, finalize)
+**Why this matters:**
+✓ Faster iteration = better results in less time
+✓ Precise feedback = less ambiguity for AI
+✓ Live preview = instant confidence
+✓ Remains local = full control
 
-This is loop engineering: tight feedback cycles between humans and AI agents.
+This is what tightly coupled human-AI feedback loops look like. Open source, MIT licensed, zero setup.
 
 GitHub: github.com/hueanmy/annotron
 Demo: youtube.com/@studyingwithmeii
 
-What's your biggest pain point in giving AI feedback?
+How are you currently giving feedback to AI?
 
-#AI #ProductDevelopment #OpenSource #Automation
+#LoopEngineering #AI #Automation #AgentDevelopment #FutureOfWork
 ```
 
 ### Post 2 (Shorter, Share-focused)
