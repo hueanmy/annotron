@@ -10,7 +10,7 @@
         "source": "github",
         "repo": "hueanmy/annotron"
       },
-      "version": "0.6.0",
+      "version": "1.0.0",
       "description": "Local review editor for agent-generated HTML artifacts.",
       "category": "productivity",
       "keywords": [

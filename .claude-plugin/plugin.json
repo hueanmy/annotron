@@ -1,6 +1,6 @@
 {
   "name": "annotron",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "description": "Review agent-generated HTML artifacts: annotate elements/text, attach images, watch live steps, cancel mid-run, send feedback, live-reload, finalize into the file, download.",
   "author": {
     "name": "Meii"
