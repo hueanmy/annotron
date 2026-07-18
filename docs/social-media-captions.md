@@ -4,41 +4,48 @@
 
 ## TikTok / YouTube Shorts
 
-### Caption Set 1 (Loop Engineering Focus)
+### Caption Set 1 (Zero-Token Loop Engineering)
 ```
-Loop engineering là đây 🔄
+Zero-Token Loop Engineering 🔄
 
-Thay vì: Email → chờ → lặp lại
-Bây giờ: Click → sửa ngay → lặp lại
+📝 Markdown artifact
+🌐 View HTML (offline)
+👆 Click/comment (no API call)
+⚡ AI sửa ngay
+💾 Save markdown (offline)
 
-✅ Tight feedback loops
-✅ Zero friction
-✅ AI feedback that works
+1 prompt = 10 vòng lặp
+0 token waste
+0 setup needed
+
+Diagram UML? Mermaid? Offline ✅
 
 Đó là annotron.
 
-Xem full demo: youtube.com/@studyingwithmeii
-GitHub: github.com/hueanmy/annotron
+youtube.com/@studyingwithmeii
 
-#LoopEngineering #AI #Automation #OpenSource
+#LoopEngineering #TokenEfficient #AI #CostSaving
 ```
 
-### Caption Set 2 (Loop Engineering Education)
+### Caption Set 2 (Token Cost Savings)
 ```
-Biết gì không? Loop engineering là gì? 👀
+Bạn đang burn token trên feedback? 🔥
 
-= Feedback loop thắt chặt giữa con người & AI
+Mỗi lần feedback = new prompt = $0.01-0.10
 
-Cách cũ: Feedback → chờ vài giờ → edit → lặp lại
-Cách mới: Click → AI sửa ngay (vài giây) → lặp lại
+annotron: Click/comment = $0.00
 
-Giảm vòng lặp từ ngày xuống giây. Đó là loop engineering.
+Offline, instant, no API call.
 
-annotron = loop engineering cho mọi người.
+1 prompt to agent = 10 feedback loops in annotron.
 
-Xem: youtube.com/@studyingwithmeii
+80% token cost reduction. 90% faster feedback cycle.
 
-#LoopEngineering #AI #Automation #DevTools
+Support UML, mermaid — all offline.
+
+Try: youtube.com/@studyingwithmeii
+
+#LoopEngineering #TokenEfficient #SaveOnTokens #AI
 ```
 
 ### Caption Set 3 (Loop Engineering Speed)

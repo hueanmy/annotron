@@ -1,51 +1,54 @@
 # TikTok Script Tiếng Việt - annotron
 
-## Version 1: Loop Engineering Focus (15s) ⭐ RECOMMENDED
+## Version 1: Zero-Token Loop Engineering (15s) ⭐ RECOMMENDED
 
 ```
 [Tông: Vui vẻ, năng động]
 
-Đây là loop engineering — feedback loop mới cho AI.
+Markdown artifact → Xem HTML → Click/comment → AI sửa ngay.
 
-Thay vì: "Làm lại cái này" → chờ → lặp lại
-Bây giờ: Click → ghi chú → AI sửa ngay → lặp lại
+Tất cả OFFLINE. Zero token cost. Không cần prompt lại.
 
-Tất cả trong 1 cửa sổ, offline, không cần setup.
+Diagram UML? Mermaid? Cũng không tốn token 📊
 
-annotron = feedback loops that actually work.
+Done → Save lại markdown. Xong.
 
-#LoopEngineering #AI #Coding #OpenSource
+Đó là loop engineering.
+
+#LoopEngineering #AI #TokenEfficient #OpenSource
 ```
 
 **Thời lượng:** ~15 giây
-**Focus:** Loop engineering concept, tight feedback cycles
+**Focus:** Token efficiency + feedback loop speed + UML support
 
 ---
 
-## Version 2: Loop Engineering Detailed (18s)
+## Version 2: Token Efficiency (18s) — For Claude/API Users
 
 ```
-[Tông: Nhanh nhẹn, hóm hỉnh]
+[Tông: Tech-focused, excited]
 
-Khái niệm mới: Loop Engineering — feedback loop thắt chặt giữa con người và AI.
+Đang dùng Claude? Đang burn token trên feedback loop?
 
-annotron = loop engineering cho mọi người.
+annotron = zero-token loop engineering.
 
-Cách hoạt động:
-1️⃣ Click element → thêm note
-2️⃣ AI tự động hiểu & sửa
-3️⃣ Thấy kết quả ngay lập tức
-4️⃣ Lặp lại cho đến hoàn hảo
+📝 Markdown artifact
+🌐 View as HTML (offline)
+👆 Click → Add note (no AI call)
+⚡ Agent sửa direct (1 prompt = nhiều vòng lặp)
+💾 Save markdown (offline)
 
-Không cần email. Không cần chờ. Không cần giải thích.
+Support mermaid diagram, UML — tất cả OFFLINE.
 
-Xem full demo: youtube.com/@studyingwithmeii
+Giảm token 80%. Giảm feedback time 90%.
 
-#LoopEngineering #AI #DevTools #Automation
+youtube.com/@studyingwithmeii
+
+#LoopEngineering #AI #TokenEfficient #CostSaving
 ```
 
 **Thời lượng:** ~18 giây
-**Focus:** Loop engineering concept + precise workflow
+**Focus:** Token efficiency for AI agents (Claude, OpenAI users)
 
 ---
 
@@ -102,27 +105,56 @@ Xem đầy đủ demo: youtube.com/@studyingwithmeii
 **Thời lượng:** ~20 giây
 **Focus:** Loop engineering foundation + live demo of workflow
 
+## Version 5: Token Savings (13s) — Cost Focus
+
+```
+[Tông: Direct, calculated]
+
+Bạn làm gì mỗi lần feedback? Gõ prompt mới.
+
+💸 Cost: $0.01-$0.10 per prompt
+⏱️ Time: 30 second wait
+
+annotron: Click & comment. Agent gets it ngay lập tức.
+
+💸 Cost: $0 (offline)
+⏱️ Time: 2 seconds
+
+Một prompt = 10 vòng lặp.
+
+Token & time cân bằng.
+
+#LoopEngineering #TokenEfficient #AI #CostSaving
+```
+
+**Thời lượng:** ~13 giây
+**Focus:** ROI for LLM API users (Claude, OpenAI pricing impact)
+
 ---
 
 ## Hashtags Cho TikTok Vietnam
 
-**Primary (Loop Engineering Focus):**
-- #LoopEngineering #FeedbackLoop #AI #DevTools
-- #AIAgent #Automation #AIDrivenDevelopment
+**Primary (Loop Engineering + Token Efficiency):**
+- #LoopEngineering #TokenEfficient #AI #CostSaving
+- #AIAgent #FeedbackLoop #OfflineAI
 
 **High Reach:**
 - #AI #Coding #OpenSource #WebDev
-- #ProductivityHack #FullStack
-- #StartupTools #TechTips #SoftwareDevelopment
+- #ProductivityHack #DevTools #FullStack
+- #StartupTools #TechTips #CodingEfficiency
 
-**Niche + Reach:**
-- #ClaudeAI #AIAgent #LLMDevelopment
+**For LLM API Users:**
+- #ClaudeAI #OpenAI #TokenCost #APIOptimization
+- #LLMDevelopment #PromptEngineering #AgentEngineering
+- #SaveOnTokens #AIEfficiency
+
+**Regional:**
 - #VietnameseTech #LapTrinhViet #CoderLife
-- #AgentEngineering #PromptEngineering
+- #TechVietnam #VietnamDevCommunity
 
 **Trending (change weekly):**
 - Check TikTok Discover for trending sounds/hashtags in Vietnam
-- Mix #LoopEngineering with trending #FYP #ForYou tags
+- Mix #LoopEngineering + #TokenEfficient with #FYP #ForYou #Viral tags
 
 ---
 
