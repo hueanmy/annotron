@@ -2,6 +2,16 @@
 
 Local, browser-based review editor for **agent-generated HTML artifacts** — annotate elements and text, attach images, watch the agent work live, approve tool permissions, send feedback to your AI coding agent, then finalize the result into the file and download it.
 
+## Get the extension
+
+[![VS Code](https://img.shields.io/badge/VS%20Code-1.75+-0078D4?logo=visualstudiocode&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=hueanmy.annotron)
+[![OpenVSX](https://img.shields.io/badge/OpenVSX-Registry-A60EE8?logo=openvsx&logoColor=white)](https://open-vsx.org/extension/hueanmy/annotron)
+[![npm](https://img.shields.io/npm/v/annotron?logo=npm&logoColor=white)](https://www.npmjs.com/package/annotron)
+
+**Quick install:**
+- **VS Code:** [Install from Marketplace](https://marketplace.visualstudio.com/items?itemName=hueanmy.annotron) · [OpenVSX Registry](https://open-vsx.org/extension/hueanmy/annotron)
+- **CLI:** `npm install -g annotron`
+
 ## Demo
 
 [![annotron in action](docs/annotron-demo.gif)](https://www.youtube.com/@studyingwithmeii)
