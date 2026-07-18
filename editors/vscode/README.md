@@ -27,13 +27,49 @@
 | `annotron.openIn` | `browser` | `browser` (external default browser) or `vscode` (a Simple Browser tab). |
 | `annotron.autoAgent` | `true` | On open, also start an agent that **auto-applies your feedback** with Claude Code (`claude`) in a terminal. Turn off to review without an agent. |
 
-## Auto-apply feedback (agent loop)
+## Agent loop & loop engineering
 
-With `annotron.autoAgent` on (default), opening a file also launches an **annotron agent** terminal: it watches for your comments, runs Claude Code to edit the source, and replies — so *Send feedback* in the browser turns into applied edits automatically. Requires the `claude` CLI on your PATH. Prefer to drive it yourself? Turn the setting off and run `annotron agent <file>` (or `annotron poll <file>`).
+**Loop engineering** is the practice of building a tight feedback cycle between human reviewers and AI agents. annotron automates this entirely—no wiring needed.
 
-## Why annotron — human‑in‑the‑loop for AI agents
+### Auto-apply feedback (agent loop)
 
-Reviewing agent‑generated docs (PRDs, tech designs, architecture diagrams, mockups) by *describing* changes in prose is slow and lossy. annotron is the **human‑in‑the‑loop** layer for **AI coding agents** (Claude Code, Cursor, …): you **point at exactly what to change**, the agent applies it, and you close the **agent loop** in seconds — precise feedback in, precise edits out. Call it *loop engineering* for docs and artifacts.
+With `annotron.autoAgent` on (default), opening a file launches an **annotron agent** in a terminal that:
+- 👁️ Watches for your annotations (comments on elements, text, or the full document)
+- 🔄 Polls continuously for feedback
+- 🤖 Runs Claude Code to apply changes to the source
+- 📝 Replies with a summary of edits made
+- 🔁 Repeats until you're done
+
+So *Send feedback* → applied edits → live preview update in seconds. Requires `claude` CLI on your PATH.
+
+### Manual agent control
+
+Prefer finer control? Turn `annotron.autoAgent` off and drive it yourself:
+
+```bash
+# Open in annotron
+annotron design.md
+
+# In another terminal, run the agent manually
+annotron agent design.md            # auto-poll & apply feedback
+# or
+annotron poll design.md             # one-shot: wait for feedback
+annotron poll design.md --reply "…" # reply with a status message
+```
+
+## Why annotron: human-in-the-loop for AI agents
+
+**The problem:** Reviewing agent-generated docs (PRDs, tech designs, architecture diagrams, mockups) by describing changes in prose is slow and lossy. "Change this paragraph" → agent guesses what you meant → you repeat.
+
+**The solution:** **Loop engineering with annotron**. You **point at exactly what to change** (click an element, select text, add a note), annotron sends structured feedback to the agent, the agent applies it, and you see the result live — close the **agent feedback loop** in seconds instead of minutes. Precise feedback in, precise edits out.
+
+### What loop engineering means in annotron
+
+1. **Integrated agent loop** — no manual wiring (`annotron --agent` starts it automatically)
+2. **Structured feedback** — each annotation carries the CSS selector, selected text, and your note; images attach too
+3. **Live activity mirror** — watch the agent's tool calls (Read/Edit/Bash) stream into the sidebar
+4. **Instant preview updates** — file changes → browser reloads → you see edits immediately
+5. **Continuous cycle** — repeat until both agree; then finalize
 
 ## How it works
 

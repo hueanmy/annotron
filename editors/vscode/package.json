@@ -1,19 +1,23 @@
 {
   "name": "annotron",
   "displayName": "annotron — Markdown preview, Mermaid diagrams & point-and-click review",
-  "description": "Preview Markdown & HTML with Mermaid diagrams (flowchart, sequence, class, ER, C4, gantt), then point-and-click to annotate & review. A human-in-the-loop review layer for AI coding agents (Claude Code, Cursor): comment on any element or text, sync edits back to the source, and close the agent loop fast. Great for architecture docs, tech designs, and AI-agent artifacts.",
+  "description": "Preview Markdown & HTML with Mermaid diagrams (flowchart, sequence, class, ER, C4, gantt), outline navigation, and point-and-click review. A human-in-the-loop layer for AI coding agents (Claude Code, Cursor): comment on any element or text, auto-apply feedback via the integrated agent loop, sync edits back to the source, and close the review cycle fast. Outline sidebar with jump navigation for long documents. Great for architecture docs, tech designs, and AI-agent artifacts.",
   "version": "0.1.0",
   "publisher": "hueanmy",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/hueanmy/annotron" },
   "engines": { "vscode": "^1.75.0" },
-  "categories": ["Visualization", "Notebooks", "Other"],
+  "categories": ["AI", "Developer Tools", "Visualization", "Documentation", "Notebooks", "Other"],
   "keywords": [
     "markdown", "markdown preview", "mermaid", "mermaid preview", "diagram", "uml",
-    "flowchart", "sequence diagram", "class diagram", "er diagram", "gantt",
+    "flowchart", "sequence diagram", "class diagram", "er diagram", "gantt", "c4",
     "preview", "annotate", "annotation", "review", "code review", "comment", "html",
-    "ai", "ai agent", "agent", "claude code", "cursor", "human in the loop",
-    "agentic", "loop engineering", "context engineering", "vibe coding", "redline", "architecture"
+    "ai", "ai agent", "agentic", "agent loop", "claude code", "cursor", "codeium",
+    "human in the loop", "in-the-loop", "human feedback", "feedback loop", "auto-apply",
+    "loop engineering", "agentic loop", "agent feedback", "continuous improvement",
+    "context engineering", "vibe coding", "redline", "markup", "architecture",
+    "artifact review", "document review", "tech design", "specification",
+    "outline", "navigation", "table of contents", "toc", "sidebar"
   ],
   "galleryBanner": { "color": "#1B1A3D", "theme": "dark" },
   "activationEvents": [],

@@ -14,35 +14,96 @@ Agents (Claude Code, etc.) produce rich HTML plans, diagrams, reports, and mocku
 
 ## Features
 
+### Review & annotation
 - **Point-and-click annotations** — comment on any element or text selection; feedback carries the CSS selector, the text, and your note.
-- **Markdown mode with diagrams** — open a `.md` and annotron renders it to HTML, turning ` ```mermaid ` blocks into inline SVG via [merslim](https://www.npmjs.com/package/merslim) (great for architecture docs / UML). An editable **Markdown pane** + **Save** button (⌘/Ctrl+S) sync your edits back to the `.md` source.
+- **Annotation threads & history** — per-annotation conversation threads, persisted to a sidecar file, plus a history tab of past rounds.
 - **Image attachments** — paste or upload images into the composer or any annotation reply/note; the agent reads them by path.
+
+### Documents & diagrams
+- **Markdown mode with diagrams** — open a `.md` and annotron renders it to HTML, turning ` ```mermaid ` blocks into inline SVG via [merslim](https://www.npmjs.com/package/merslim) (great for architecture docs / UML). An editable **Markdown pane** + **Save** button (⌘/Ctrl+S) sync your edits back to the `.md` source.
+- **Outline navigation sidebar** — for Markdown files with multiple sections, an auto-generated **outline sidebar** shows h1–h4 headings with visual hierarchy. Click any heading to jump to that section; toggle with the collapse button (`‹`/`›`) or **Ctrl+L** to expand/collapse. State persists across sessions.
+
+### Agent loop & loop engineering
+- **Auto-apply feedback loop** — integrated **agent loop engineering** (`annotron agent <file>` or `--agent` flag) that continuously polls for your annotations, applies changes with Claude Code, and reports back — no manual wiring. Precise feedback in, precise edits out.
 - **Live activity mirror** — a bundled hook streams the agent's tool calls (Read/Edit/Bash/…) into the sidebar like a CLI, so you can follow along in real time.
 - **Turn-status bar** — always know whose turn it is: *Agent working… / Waiting for your feedback / Needs your permission*.
+
+### Control & safety
 - **Cancel anytime** — a Cancel button stops the agent at the next tool boundary (enforced by the bundled hook, no per-project setup).
 - **Remote permission approval** — optionally route Claude Code permission prompts to the browser and click **Allow / Allow-always / Deny**; the decision goes back to the CLI.
-- **Annotation threads & history** — per-annotation conversation threads, persisted to a sidecar file, plus a history tab of past rounds.
 
-## Core loop
+## Outline navigation (Markdown files)
+
+When reviewing a long Markdown document, an **outline sidebar** on the left shows all section headings extracted from the file. 
+
+- **Visual hierarchy** — h1–h4 headings with progressive indentation and font sizing
+- **One-click jump** — click any heading to scroll to that section in the document
+- **Collapse/expand** — toggle the sidebar width with the `‹`/`›` button or press **Ctrl+L** (Cmd+L on Mac)
+- **Active highlighting** — as you scroll, the current section is highlighted in the outline
+- **Persistent state** — collapse preference is saved in your browser's localStorage
+
+Great for reviewing architecture docs, tech specs, RFCs, and any long structured document.
+
+## The agent loop: loop engineering for artifacts
+
+**Loop engineering** is the discipline of building tight feedback cycles between humans and AI agents. annotron automates this for document and artifact review.
+
+annotron's core strength is **the agent feedback loop**—a continuous cycle that keeps the agent and reviewer in sync:
 
 ```
-agent writes artifact.html
+agent generates artifact.html (or .md)
         │
         ▼
-annotron artifact.html        → opens the review editor in your browser
+annotron <file> --agent           → opens review editor + starts agent loop in background
         │
         ▼
-you turn on Annotate, click elements / select text, write notes → Send feedback
+you annotate (click / select text / add notes) → Send feedback
         │
         ▼
-annotron poll artifact.html   → agent receives feedback JSON, edits the file, replies
+agent receives feedback (JSON: selector, text, note, images) 
         │
         ▼
-file changes → editor live-reloads (repeat until both agree)
+agent runs: claude -p [your feedback] → edits the file
         │
         ▼
-Finalize → clean result written into the file
-Download → clean HTML saved to your machine
+file changes → editor live-reloads (you see updates instantly)
+        │
+        ▼
+agent streams activity to sidebar (Read/Edit/Bash calls visible)
+        │
+        ▼
+repeat until both agree, then:
+        │
+        ▼
+Finalize → clean result written to file
+Download → clean artifact saved to your machine
+```
+
+**This is loop engineering**: precise feedback → applied edits → live preview → repeat. The agent loop is wired directly into annotron with **zero setup**. Just `--agent` and start annotating. No webhooks, no manual polling, no context switching.
+
+### Loop engineering concepts
+
+**Auto-apply feedback loop** — a continuous cycle where:
+- You annotate (click elements, select text, add notes)
+- Annotron sends **structured feedback** (CSS selector, text content, your message, images)
+- Agent receives feedback and applies changes to the source
+- Browser reloads automatically to show edits
+- Repeat until done
+
+**Tight feedback cycles** — by removing prose, polling delays, and context switches, annotron keeps you in flow. Comment → applied in seconds → see the result. No "describe what you see" overhead.
+
+**Agent-in-the-loop** — never block on async feedback. The agent works in a terminal while you review in the browser. Feedback arrives → agent processes → edits appear live.
+
+### Without `--agent`
+
+If you prefer manual control:
+
+```
+annotron <file>               → opens editor, no agent
+[you annotate]
+annotron agent <file>         → manually start the loop (in a separate terminal)
+[agent applies feedback]
+annotron stop                 → shut down when done
 ```
 
 ## VS Code extension
@@ -71,14 +132,27 @@ node bin/annotron artifact.html
 ## Usage
 
 ```
-annotron <file.html|file.md>            Open the editor in browser (.md renders to HTML with diagrams)
-annotron poll <file.html>               Wait for feedback (run by the agent)
-annotron poll <file.html> --reply "…"  Post a reply then wait for feedback
-annotron progress <file.html> "step"    Post a live progress step (optional; hooks do this automatically)
-annotron check <file.html>              Print {"cancelled":true|false} for the session
-annotron stop                           Shut down the background server
-annotron help                           Show help
+annotron <file.html|file.md>              Open the editor in browser (.md renders to HTML with diagrams)
+annotron <file.html|file.md> --agent      Open editor + start the auto-apply feedback loop (recommended for workflows)
+annotron agent <file.html|file.md>        Run the agent loop separately (if server already running)
+annotron poll <file.html>                 Wait for feedback (run by the agent)
+annotron poll <file.html> --reply "…"    Post a reply then wait for feedback
+annotron progress <file.html> "step"      Post a live progress step (optional; hooks do this automatically)
+annotron check <file.html>                Print {"cancelled":true|false} for the session
+annotron stop                             Shut down the background server
+annotron help                             Show help
 ```
+
+### Quick start: auto-apply loop
+
+To open a file and automatically apply feedback:
+
+```bash
+annotron architecture-demo.md --agent
+# Browser opens → add annotations → agent applies changes live → repeat until done
+```
+
+The `--agent` flag starts the **loop engineering**: annotron listens for your feedback annotations, passes them to Claude Code (via `claude -p`), and watches the file changes in real-time. No manual polling—just comment, and watch the agent work.
 
 ### Environment variables
 
