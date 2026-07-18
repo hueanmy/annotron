@@ -214,7 +214,7 @@ async function handler(req, res) {
   }
 
   if (pathname === '/sdk.js' && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/javascript' });
+    res.writeHead(200, { 'Content-Type': 'application/javascript', 'Cache-Control': 'no-store' });
     res.end(fs.readFileSync(SDK_PATH, 'utf8'));
     return;
   }
@@ -227,7 +227,10 @@ async function handler(req, res) {
     let html;
     try { html = fs.readFileSync(abs, 'utf8'); } catch { return send(res, 404, { error: 'not found' }); }
     const injected = injectSDK(html);
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    // Never cache: the artifact changes as the agent edits it, and the injected
+    // SDK changes across versions — a cached copy would serve a stale preview
+    // (and stale annotation overlays) even after a reload.
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(injected);
     return;
   }
