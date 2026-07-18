@@ -4,6 +4,17 @@
 
 ![annotron demo](https://raw.githubusercontent.com/hueanmy/annotron/main/docs/annotron-demo.gif)
 
+---
+
+### 🌍 Also available on
+
+| **VS Code Extension** | **OpenVSX Registry** | **npm CLI** |
+|:---:|:---:|:---:|
+| [![VS Code](https://img.shields.io/badge/Marketplace-Install-0078D4?logo=visualstudiocode&logoColor=white&style=flat-square)](https://marketplace.visualstudio.com/items?itemName=hueanmy.annotron) | [![OpenVSX](https://img.shields.io/badge/Registry-Install-A60EE8?logo=openvsx&logoColor=white&style=flat-square)](https://open-vsx.org/extension/hueanmy/annotron) | [![npm](https://img.shields.io/badge/npmjs-Install-CB3837?logo=npm&logoColor=white&style=flat-square)](https://www.npmjs.com/package/annotron) |
+| You're here! | For VS Code forks & IDEs | `npm install -g annotron` |
+
+---
+
 ## Features
 
 - 📝 **Markdown preview** — render `.md` to a clean, readable document (tables, code, blockquotes, everything).

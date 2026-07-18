@@ -6,7 +6,9 @@
   "publisher": "hueanmy",
   "icon": "icon.png",
   "license": "MIT",
+  "homepage": "https://github.com/hueanmy/annotron#readme",
   "repository": { "type": "git", "url": "https://github.com/hueanmy/annotron" },
+  "bugs": { "url": "https://github.com/hueanmy/annotron/issues" },
   "engines": { "vscode": "^1.75.0" },
   "categories": ["AI", "Visualization", "Notebooks", "Other"],
   "keywords": [

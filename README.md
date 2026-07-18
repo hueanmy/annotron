@@ -2,15 +2,33 @@
 
 Local, browser-based review editor for **agent-generated HTML artifacts** — annotate elements and text, attach images, watch the agent work live, approve tool permissions, send feedback to your AI coding agent, then finalize the result into the file and download it.
 
-## Get the extension
+---
 
-[![VS Code](https://img.shields.io/badge/VS%20Code-1.75+-0078D4?logo=visualstudiocode&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=hueanmy.annotron)
-[![OpenVSX](https://img.shields.io/badge/OpenVSX-Registry-A60EE8?logo=openvsx&logoColor=white)](https://open-vsx.org/extension/hueanmy/annotron)
-[![npm](https://img.shields.io/npm/v/annotron?logo=npm&logoColor=white)](https://www.npmjs.com/package/annotron)
+### ⚡ Get started
 
-**Quick install:**
-- **VS Code:** [Install from Marketplace](https://marketplace.visualstudio.com/items?itemName=hueanmy.annotron) · [OpenVSX Registry](https://open-vsx.org/extension/hueanmy/annotron)
-- **CLI:** `npm install -g annotron`
+<table>
+  <tr>
+    <td width="35%">
+      <a href="https://marketplace.visualstudio.com/items?itemName=hueanmy.annotron">
+        <img src="https://img.shields.io/badge/VS%20Code%20Extension-Install-0078D4?logo=visualstudiocode&logoColor=white&style=flat-square" alt="VS Code Extension" />
+      </a>
+    </td>
+    <td width="35%">
+      <a href="https://open-vsx.org/extension/hueanmy/annotron">
+        <img src="https://img.shields.io/badge/OpenVSX-Registry-A60EE8?logo=openvsx&logoColor=white&style=flat-square" alt="OpenVSX" />
+      </a>
+    </td>
+    <td width="30%">
+      <a href="https://www.npmjs.com/package/annotron">
+        <img src="https://img.shields.io/npm/v/annotron?logo=npm&logoColor=white&style=flat-square" alt="npm" />
+      </a>
+    </td>
+  </tr>
+</table>
+
+**CLI:** `npm install -g annotron` — then run `annotron <file.html|file.md> --agent`
+
+---
 
 ## Demo
 

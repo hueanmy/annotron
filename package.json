@@ -13,9 +13,13 @@
     "commands/",
     "hooks/"
   ],
+  "homepage": "https://github.com/hueanmy/annotron#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hueanmy/annotron.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hueanmy/annotron/issues"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
