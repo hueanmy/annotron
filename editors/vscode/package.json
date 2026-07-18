@@ -1,14 +1,21 @@
 {
   "name": "annotron",
-  "displayName": "annotron — point-and-click artifact review",
-  "description": "Right-click a .md or .html file to open it in annotron for point-and-click review in your browser.",
+  "displayName": "annotron — Markdown preview, Mermaid diagrams & point-and-click review",
+  "description": "Preview Markdown & HTML with Mermaid diagrams (flowchart, sequence, class, ER, C4, gantt), then point-and-click to annotate & review. A human-in-the-loop review layer for AI coding agents (Claude Code, Cursor): comment on any element or text, sync edits back to the source, and close the agent loop fast. Great for architecture docs, tech designs, and AI-agent artifacts.",
   "version": "0.1.0",
   "publisher": "hueanmy",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/hueanmy/annotron" },
   "engines": { "vscode": "^1.75.0" },
-  "categories": ["Other", "Visualization"],
-  "keywords": ["annotron", "markdown", "review", "annotate", "mermaid", "diagram"],
+  "categories": ["Visualization", "Notebooks", "Other"],
+  "keywords": [
+    "markdown", "markdown preview", "mermaid", "mermaid preview", "diagram", "uml",
+    "flowchart", "sequence diagram", "class diagram", "er diagram", "gantt",
+    "preview", "annotate", "annotation", "review", "code review", "comment", "html",
+    "ai", "ai agent", "agent", "claude code", "cursor", "human in the loop",
+    "agentic", "loop engineering", "context engineering", "vibe coding", "redline", "architecture"
+  ],
+  "galleryBanner": { "color": "#1B1A3D", "theme": "dark" },
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
