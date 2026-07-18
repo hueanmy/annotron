@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- **Reviewer identity on comments** — comments now record and show *who* wrote them. A new `GET /whoami` resolves the reviewer from the GitHub login (`gh api user`), falling back to `git config user.name` / `user.email`, then `user@hostname`. The server stamps `author` + `authorDetail` onto each annotation and human thread message in the sidecar, and the sidebar renders the name, a colored initials avatar, and the email/host as a tooltip.
+
 ### Changed
 - **Editor redesign** — reimplemented the review chrome and in-artifact overlays in a new light design system (imported from the Claude Design `Annotron.dc.html` project): Inter + Petrona typography, a `#2741F1` accent palette, rounded cards and soft shadows. Comment cards now show an avatar, author, relative time, kind tag, quoted selection, and threaded agent replies, with **Resolve/Reopen** and inline **Reply**. Selecting text (or clicking an element in Annotate mode) opens a "New comment" composer **inline in the artifact, anchored right below the selection/element**; on submit the comment lands in the sidebar as a pending card. The sidebar gains **Annotations / History** tabs with a timeline, and a toast surfaces actions. All backend wiring is unchanged — SSE live reload/activity mirror, long-poll feedback, sidecar annotations & threads, serialize/finalize/download, image upload, remote permission approval, and cancel all work as before. The dark theme and its toggle were removed in favor of the single light design.
 

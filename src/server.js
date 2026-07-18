@@ -1,10 +1,50 @@
 import http from 'http';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import crypto from 'crypto';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const execFileP = promisify(execFile);
+
+// --- Reviewer identity ---------------------------------------------------------
+// Who is leaving comments? Prefer the GitHub login (via `gh`), then the git
+// user.name/email, then the OS user@hostname. Computed once and cached — this is
+// a single-user local tool. PATH is augmented so `gh`/`git` resolve even when
+// the server was spawned from a GUI (Dock) with a minimal PATH.
+let _identityPromise = null;
+function identityEnv() {
+  const home = process.env.HOME || '';
+  const extra = ['/opt/homebrew/bin', '/usr/local/bin', `${home}/.local/bin`].filter(Boolean).join(':');
+  return { ...process.env, PATH: `${process.env.PATH || ''}:${extra}` };
+}
+async function runId(cmd, args, cwd) {
+  try {
+    const { stdout } = await execFileP(cmd, args, { cwd, timeout: 2500, env: identityEnv() });
+    return stdout.toString().trim();
+  } catch { return ''; }
+}
+async function computeIdentity(cwd) {
+  const [gitName, gitEmail, login] = await Promise.all([
+    runId('git', ['config', 'user.name'], cwd),
+    runId('git', ['config', 'user.email'], cwd),
+    runId('gh', ['api', 'user', '--jq', '.login'], cwd),
+  ]);
+  let user = '', host = '';
+  try { user = os.userInfo().username; } catch {}
+  try { host = os.hostname().replace(/\.local$/, ''); } catch {}
+  const name = login || gitName || user || 'Reviewer';
+  const userHost = user && host ? `${user}@${host}` : (host || user);
+  const detail = login ? (gitEmail || userHost) : (gitEmail || userHost);
+  return { name, detail, login, gitName, gitEmail, user, host };
+}
+function getIdentity(cwd) {
+  if (!_identityPromise) _identityPromise = computeIdentity(cwd);
+  return _identityPromise;
+}
 
 const PORT = parseInt(process.env.ANNOTRON_PORT || '7321', 10);
 const HOST = process.env.ANNOTRON_HOST || '127.0.0.1';
@@ -214,7 +254,7 @@ async function handler(req, res) {
   }
 
   if (pathname === '/sdk.js' && method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/javascript' });
+    res.writeHead(200, { 'Content-Type': 'application/javascript', 'Cache-Control': 'no-store' });
     res.end(fs.readFileSync(SDK_PATH, 'utf8'));
     return;
   }
@@ -227,7 +267,10 @@ async function handler(req, res) {
     let html;
     try { html = fs.readFileSync(abs, 'utf8'); } catch { return send(res, 404, { error: 'not found' }); }
     const injected = injectSDK(html);
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    // Never cache: the artifact changes as the agent edits it, and the injected
+    // SDK changes across versions — a cached copy would serve a stale preview
+    // (and stale annotation overlays) even after a reload.
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(injected);
     return;
   }
@@ -238,6 +281,13 @@ async function handler(req, res) {
     const abs = path.resolve(file);
     if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
     return send(res, 200, readSidecar(abs));
+  }
+
+  // Who is reviewing? Used by the browser to label comment authors.
+  if (pathname === '/whoami' && method === 'GET') {
+    const file = u.searchParams.get('file');
+    const cwd = file ? path.dirname(path.resolve(file)) : process.cwd();
+    return send(res, 200, await getIdentity(cwd));
   }
 
   if (pathname === '/annotations' && method === 'POST') {
@@ -259,15 +309,18 @@ async function handler(req, res) {
     if (!file) return send(res, 400, { error: 'missing file' });
     const abs = path.resolve(file);
     if (!allowList.has(abs)) return send(res, 403, { error: 'not registered' });
-    // Persist annotations to sidecar
+    // Persist annotations to sidecar, stamped with the reviewer's identity.
     if (body.items && body.items.length > 0) {
+      const who = await getIdentity(path.dirname(abs));
+      const now = () => new Date().toISOString();
+      const humanMsg = (message) => ({ role: 'human', author: who.name, authorDetail: who.detail, message, timestamp: now() });
       const sidecar = readSidecar(abs);
       for (const item of body.items) {
         const existing = item.id ? sidecar.annotations.find(a => a.id === item.id) : null;
         if (existing) {
           // Add new message to existing thread
           if (!existing.thread) existing.thread = [];
-          if (item.note) existing.thread.push({ role: 'human', message: item.note, timestamp: new Date().toISOString() });
+          if (item.note) existing.thread.push(humanMsg(item.note));
           if (item.kind === 'text') {
             existing.textStart = Number.isInteger(item.textStart) ? item.textStart : existing.textStart ?? null;
             existing.textEnd = Number.isInteger(item.textEnd) ? item.textEnd : existing.textEnd ?? null;
@@ -286,8 +339,10 @@ async function handler(req, res) {
             textEnd: Number.isInteger(item.textEnd) ? item.textEnd : null,
             textPrefix: item.textPrefix || null,
             textSuffix: item.textSuffix || null,
-            thread: item.note ? [{ role: 'human', message: item.note, timestamp: new Date().toISOString() }] : [],
-            createdAt: new Date().toISOString(),
+            author: who.name,
+            authorDetail: who.detail,
+            thread: item.note ? [humanMsg(item.note)] : [],
+            createdAt: now(),
             status: 'open',
           };
           item.id = ann.id;
