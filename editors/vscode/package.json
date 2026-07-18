@@ -2,7 +2,7 @@
   "name": "annotron",
   "displayName": "annotron — Markdown preview, Mermaid diagrams & point-and-click review",
   "description": "Preview Markdown & HTML with Mermaid diagrams (flowchart, sequence, class, ER, C4, gantt), outline navigation, and point-and-click review. A human-in-the-loop layer for AI coding agents (Claude Code, Cursor): comment on any element or text, auto-apply feedback via the integrated agent loop, sync edits back to the source, and close the review cycle fast. Outline sidebar with jump navigation for long documents. Great for architecture docs, tech designs, and AI-agent artifacts.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "hueanmy",
   "icon": "icon.png",
   "license": "MIT",
