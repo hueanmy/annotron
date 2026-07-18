@@ -2,6 +2,12 @@
 
 Local, browser-based review editor for **agent-generated HTML artifacts** — annotate elements and text, attach images, watch the agent work live, approve tool permissions, send feedback to your AI coding agent, then finalize the result into the file and download it.
 
+## Demo
+
+[![annotron in action](docs/annotron-demo.gif)](docs/annotron-demo.mp4)
+
+Comment on any text selection or element with an inline composer, hover a highlight to preview its note, send feedback and watch the agent's activity stream in live, then browse past rounds in **History**. ▶︎ [Watch the full-quality video](docs/annotron-demo.mp4)
+
 ## The problem
 
 Agents (Claude Code, etc.) produce rich HTML plans, diagrams, reports, and mockups. Giving feedback by describing what you see in text is clumsy. `annotron` gives you a point-and-click annotation layer directly on the rendered artifact, so the agent gets precise, structured feedback (which element, what text, what to change).
