@@ -4,9 +4,19 @@ Local, browser-based review editor for **agent-generated HTML artifacts** — an
 
 ## Demo
 
-[![annotron in action](docs/annotron-demo.gif)](docs/annotron-demo.mp4)
+[![annotron in action](docs/annotron-demo.gif)](https://www.youtube.com/@studyingwithmeii)
 
-Run `annotron architecture-demo.md` → the Markdown renders to HTML with **merslim** diagrams (flowchart, sequence, class, ER, gitGraph, gantt, C4) and technical tables. Comment on any text or element with an inline composer (comments are labeled with your GitHub identity), hover a highlight to preview its note, edit the Markdown source and **Save** to re-render, send feedback and watch the agent's activity stream in live, then browse **History**. ▶︎ [Watch the full-quality video](docs/annotron-demo.mp4)
+**Quick demo:** Run `annotron architecture-demo.md --agent` → opens in your browser with **outline navigation** (jump between sections), **outline sidebar** (collapse/expand with Ctrl+L), point-and-click **annotations** (comment on any element or text), **auto-apply feedback loop** (changes apply in real-time), and live **activity mirror** (watch the agent work). 
+
+Features shown in video:
+- 📍 **Outline navigation** — jump to sections, collapse sidebar
+- 💬 **Annotations** — click text/elements to comment
+- 🤖 **Agent loop** — feedback auto-applies, watch activity
+- 📋 **History** — browse past feedback rounds
+- ✏️ **Markdown editing** — live source editor with Save
+- 📥 **Download/Finalize** — clean artifacts
+
+▶︎ [Watch the full demo on YouTube](https://www.youtube.com/@studyingwithmeii) · [Quick intro](docs/intro.html) · [Local video](docs/annotron-demo-v2.mp4) (2.9 MB, 30 sec)
 
 ## The problem
 
