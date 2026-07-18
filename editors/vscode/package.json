@@ -51,6 +51,11 @@
           ],
           "default": "browser",
           "description": "Where to open the annotron review editor."
+        },
+        "annotron.autoAgent": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "When you open a file, also start an agent that **auto-applies your feedback** — it runs Claude Code (`claude`) in a terminal, watches for comments, edits the source, and replies. Requires the `claude` CLI on your PATH. Turn off to review without an agent (then run `annotron poll` yourself)."
         }
       }
     }

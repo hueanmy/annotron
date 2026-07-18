@@ -13,7 +13,22 @@ const http = require('http');
 
 let context;
 let serverProc = null;
+const agents = new Map(); // file -> Terminal running `annotron agent`
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Start (or focus) an auto-apply agent for `file` in a visible terminal. The
+// agent watches for feedback and applies it with Claude Code, so the reviewer
+// doesn't have to run anything by hand.
+function startAgent(file, port) {
+  const existing = agents.get(file);
+  if (existing) { existing.show(false); return; }
+  const binPath = context.asAbsolutePath(path.join('vendor', 'annotron', 'bin', 'annotron'));
+  const term = vscode.window.createTerminal({ name: 'annotron agent' });
+  const q = (s) => `"${String(s).replace(/"/g, '\\"')}"`;
+  term.sendText(`ELECTRON_RUN_AS_NODE=1 ANNOTRON_PORT=${port} ${q(process.execPath)} ${q(binPath)} agent ${q(file)}`);
+  term.show(false);
+  agents.set(file, term);
+}
 
 function health(port) {
   return new Promise((resolve) => {
@@ -81,6 +96,11 @@ async function openFile(uri) {
         } else {
           await vscode.env.openExternal(vscode.Uri.parse(url));
         }
+        // Auto-start the feedback agent so comments get applied without any
+        // manual polling (annotron.autoAgent).
+        if (cfg.get('autoAgent', true)) {
+          try { startAgent(file, port); } catch (_) {}
+        }
       }
     );
   } catch (e) {
@@ -98,6 +118,10 @@ function activate(ctx) {
   context = ctx;
   ctx.subscriptions.push(vscode.commands.registerCommand('annotron.open', openFile));
   ctx.subscriptions.push(vscode.commands.registerCommand('annotron.stop', stopServer));
+  // Forget an agent when its terminal is closed, so it can be restarted.
+  ctx.subscriptions.push(vscode.window.onDidCloseTerminal((t) => {
+    for (const [f, term] of agents) if (term === t) agents.delete(f);
+  }));
 }
 
 // Leave the server running as a background daemon between windows; the user can

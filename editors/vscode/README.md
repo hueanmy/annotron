@@ -25,6 +25,11 @@
 |---|---|---|
 | `annotron.port` | `7321` | Port the bundled server listens on (`127.0.0.1`). |
 | `annotron.openIn` | `browser` | `browser` (external default browser) or `vscode` (a Simple Browser tab). |
+| `annotron.autoAgent` | `true` | On open, also start an agent that **auto-applies your feedback** with Claude Code (`claude`) in a terminal. Turn off to review without an agent. |
+
+## Auto-apply feedback (agent loop)
+
+With `annotron.autoAgent` on (default), opening a file also launches an **annotron agent** terminal: it watches for your comments, runs Claude Code to edit the source, and replies — so *Send feedback* in the browser turns into applied edits automatically. Requires the `claude` CLI on your PATH. Prefer to drive it yourself? Turn the setting off and run `annotron agent <file>` (or `annotron poll <file>`).
 
 ## Why annotron — human‑in‑the‑loop for AI agents
 

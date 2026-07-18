@@ -93,8 +93,16 @@ async function cmdOpen(file) {
 
   const editorUrl = `${BASE}/?file=${encodeURIComponent(abs)}`;
   console.log('Editor URL:', editorUrl);
-  console.log('Poll command: annotron poll', abs);
   openBrowser(editorUrl);
+
+  // `annotron <file> --agent` also starts the auto-apply agent loop in the
+  // foreground, so feedback is handled without a separate command.
+  if (process.argv.includes('--agent')) {
+    console.log('');
+    await cmdAgent(abs);
+  } else {
+    console.log('Agent:  annotron agent', abs, '   (auto-apply feedback with Claude)');
+  }
 }
 
 async function cmdPoll(file, reply, annotationId) {
@@ -155,16 +163,93 @@ async function cmdStop() {
   } catch { console.log('Server not running.'); }
 }
 
+// --- Agent loop: poll for feedback and auto-apply it with Claude Code ---------
+// `annotron agent <file>` sits in the feedback loop so the reviewer never has to
+// wire anything: it waits for feedback, runs `claude -p` to edit the source
+// file, and replies — then loops. This is what turns "Send feedback" in the
+// browser into applied edits automatically.
+
+// Augment PATH so `claude` resolves even when launched from a GUI (Dock).
+function agentEnv() {
+  const home = process.env.HOME || '';
+  const extra = ['/opt/homebrew/bin', '/usr/local/bin', `${home}/.local/bin`, `${home}/.claude/local`]
+    .filter(Boolean).join(':');
+  return { ...process.env, PATH: `${process.env.PATH || ''}:${extra}` };
+}
+
+function buildAgentPrompt(abs, items, message) {
+  const list = (items || []).map((it, i) => {
+    const where = it.text ? `the text "${it.text}"` : (it.label ? `the element ${it.label}` : `(${it.kind})`);
+    return `${i + 1}. On ${where}: ${it.note || '(no note)'}`;
+  }).join('\n');
+  return [
+    `Apply human review feedback to this source file: ${abs}`,
+    `Edit the file directly — it is the source of truth (Markdown or HTML). Make ONLY the requested changes:`,
+    list || '(see the reviewer note below)',
+    message ? `\nReviewer note:\n${message}` : '',
+    `\nAfter editing, reply with ONE short sentence describing what you changed.`,
+  ].filter(Boolean).join('\n');
+}
+
+function runClaude(prompt, cwd) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('claude', ['-p', prompt, '--permission-mode', 'acceptEdits'], { cwd, env: agentEnv() });
+    let out = '', err = '';
+    child.stdout.on('data', c => (out += c));
+    child.stderr.on('data', c => (err += c));
+    child.on('error', reject);
+    child.on('close', code => {
+      if (code === 0) resolve(out.trim());
+      else reject(new Error((err.trim() || out.trim() || `claude exited ${code}`).split('\n').slice(-3).join(' ')));
+    });
+  });
+}
+
+async function cmdAgent(file) {
+  if (!file) { console.error('Usage: annotron agent <file>'); process.exit(1); }
+  const abs = path.resolve(file);
+  if (!fs.existsSync(abs)) { console.error(`File not found: ${abs}`); process.exit(1); }
+  await ensureServer();
+  const s = await postJSON('/session', { file: abs });
+  if (s.status !== 200) { console.error('Session error:', s.body); process.exit(1); }
+  console.log(`annotron agent • watching ${abs}`);
+  console.log('Waiting for feedback from the browser…  (Ctrl+C to stop)\n');
+  for (;;) {
+    let body;
+    try {
+      const r = await apiFetch('/poll?file=' + encodeURIComponent(abs));
+      if (r.status !== 200) { await sleep(1500); continue; }
+      body = JSON.parse(r.body);
+    } catch { await sleep(1500); continue; }
+    if (body.finalized) { console.log('✓ Finalized — agent stopping.'); break; }
+    if (!body.feedback) continue; // keep-alive tick
+    const items = body.feedback.items || [];
+    const message = (body.feedback.message || '').trim();
+    console.log(`▶ Feedback: ${items.length} comment(s)${message ? ' + message' : ''} — applying with claude…`);
+    let summary = '';
+    try { summary = await runClaude(buildAgentPrompt(abs, items, message), path.dirname(abs)); }
+    catch (e) { summary = `Could not apply automatically: ${e.message}`; }
+    const short = summary.split('\n').filter(Boolean).slice(-1)[0] || 'Applied your feedback.';
+    for (const it of items) {
+      if (it.id) await postJSON('/agent-reply', { file: abs, annotationId: it.id, message: `Applied — ${it.note || it.label || 'done'}.` }).catch(() => {});
+    }
+    await postJSON('/agent-reply', { file: abs, message: short }).catch(() => {});
+    console.log(`✓ ${short}\n`);
+  }
+}
+
 function cmdHelp() {
   console.log(`
 annotron — local review editor for agent-generated HTML artifacts
 
 Usage:
-  annotron <file.html>                    Open the editor in browser
-  annotron poll <file.html>               Wait for feedback (run by agent)
-  annotron poll <file.html> --reply "…"  Post a reply then wait for feedback
-  annotron progress <file.html> "step"    Post a live progress step (shown in the browser)
-  annotron check <file.html>              Print {"cancelled":true|false} for the session
+  annotron <file.html|file.md>            Open the editor in browser
+  annotron <file> --agent                 Open + auto-apply feedback with Claude
+  annotron agent <file>                   Run the auto-apply agent loop (poll → claude → reply)
+  annotron poll <file>                    Wait for feedback (low-level, run by an agent)
+  annotron poll <file> --reply "…"       Post a reply then wait for feedback
+  annotron progress <file> "step"         Post a live progress step (shown in the browser)
+  annotron check <file>                   Print {"cancelled":true|false} for the session
   annotron stop                           Shut down the background server
   annotron help                           Show this help
 
@@ -193,7 +278,9 @@ if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
   const annIdx = args.indexOf('--annotation-id');
   const annotationId = annIdx !== -1 ? args[annIdx + 1] : null;
   await cmdPoll(file, reply, annotationId);
+} else if (cmd === 'agent') {
+  await cmdAgent(args[1]);
 } else {
-  // annotron <file.html>
+  // annotron <file.html|file.md> [--agent]
   await cmdOpen(cmd);
 }
