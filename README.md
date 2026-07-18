@@ -6,7 +6,7 @@ Local, browser-based review editor for **agent-generated HTML artifacts** — an
 
 [![annotron in action](docs/annotron-demo.gif)](docs/annotron-demo.mp4)
 
-Comment on any text selection or element with an inline composer, hover a highlight to preview its note, send feedback and watch the agent's activity stream in live, then browse past rounds in **History**. ▶︎ [Watch the full-quality video](docs/annotron-demo.mp4)
+Run `annotron architecture-demo.md` → the Markdown renders to HTML with **merslim** diagrams (flowchart, sequence, class, ER, gitGraph, gantt, C4) and technical tables. Comment on any text or element with an inline composer (comments are labeled with your GitHub identity), hover a highlight to preview its note, edit the Markdown source and **Save** to re-render, send feedback and watch the agent's activity stream in live, then browse **History**. ▶︎ [Watch the full-quality video](docs/annotron-demo.mp4)
 
 ## The problem
 
