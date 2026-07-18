@@ -430,6 +430,7 @@ let toastTimer = null;
 let agentWorking = false;
 let selectedAnnotationId = null;
 let openReplyId = null;      // annotation id whose reply editor is open
+let me = { name: 'You', detail: '', initials: 'YO', color: '#2741F1' };  // reviewer identity
 
 // Image staging (runtime only — never persisted to the sidecar).
 const composerImages = [];       // main composer
@@ -586,6 +587,31 @@ function selectAnnotation(id, shouldFocusArtifact = false) {
   }
 }
 
+// ── Reviewer identity ───────────────────────────────────────────────────────
+const AVATAR_COLORS = ['#2741F1', '#4E11B2', '#8C78F3', '#D88689', '#1c8a4e', '#2fbf71'];
+function initialsOf(name) {
+  const parts = String(name || '').trim().split(/[\s@._-]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return (parts[0] || 'YO').slice(0, 2).toUpperCase();
+}
+function colorOf(name) {
+  let h = 0;
+  for (const c of String(name || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+async function loadWhoami() {
+  if (!file) return;
+  try {
+    const res = await fetch('/whoami?file=' + encodeURIComponent(file));
+    if (!res.ok) return;
+    const d = await res.json();
+    if (d && d.name) {
+      me = { name: d.name, detail: d.detail || '', initials: initialsOf(d.name), color: colorOf(d.name) };
+      renderAnnotations();
+    }
+  } catch {}
+}
+
 // ── Load / save annotations ────────────────────────────────────────────────
 async function loadAnnotations() {
   if (!file) return;
@@ -654,15 +680,25 @@ function buildAnnotationCard(ann, isPending) {
   card.dataset.id = ann.id;
 
   // Header
+  const authorName = isPending ? me.name : (ann.author || me.name);
+  const authorDetail = isPending ? me.detail : (ann.authorDetail || me.detail);
   const head = document.createElement('div');
   head.className = 'ann-head';
   const avatar = document.createElement('span');
   avatar.className = 'ann-avatar';
-  avatar.style.background = isPending ? 'var(--coral)' : 'var(--accent)';
-  avatar.textContent = 'YO';
+  avatar.style.background = colorOf(authorName);
+  avatar.textContent = initialsOf(authorName);
+  if (authorDetail) avatar.title = authorDetail;
   const who = document.createElement('div');
   who.className = 'ann-who';
-  who.innerHTML = `<div class="ann-author">You</div><div class="ann-time">${isPending ? 'pending send' : timeAgo(ann.createdAt)}</div>`;
+  const authorEl = document.createElement('div');
+  authorEl.className = 'ann-author';
+  authorEl.textContent = authorName;
+  if (authorDetail) authorEl.title = authorDetail;
+  const timeEl = document.createElement('div');
+  timeEl.className = 'ann-time';
+  timeEl.textContent = isPending ? 'pending send' : timeAgo(ann.createdAt);
+  who.append(authorEl, timeEl);
   head.append(avatar, who);
 
   if (!isPending && ann.status === 'resolved') {
@@ -1120,7 +1156,7 @@ function makeCopyBtn(text, cls) {
 function addConvoMsg(role, text) {
   const el = document.createElement('div');
   el.className = 'msg ' + role;
-  const label = document.createElement('div'); label.className = 'msg-label'; label.textContent = role === 'human' ? 'You' : 'Agent';
+  const label = document.createElement('div'); label.className = 'msg-label'; label.textContent = role === 'human' ? me.name : 'Agent';
   const body = document.createElement('div'); body.textContent = text;
   el.append(label, body);
   if (role === 'agent') el.append(makeCopyBtn(text, 'msg-copy'));
@@ -1230,6 +1266,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ── Init ───────────────────────────────────────────────────────────────────
+loadWhoami();
 loadAnnotations();
 </script>
 </body>
