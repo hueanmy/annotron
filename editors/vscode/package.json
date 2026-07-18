@@ -8,7 +8,7 @@
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/hueanmy/annotron" },
   "engines": { "vscode": "^1.75.0" },
-  "categories": ["AI", "Developer Tools", "Visualization", "Documentation", "Notebooks", "Other"],
+  "categories": ["AI", "Markdown", "Visualization", "Documentation", "Notebooks", "Other"],
   "keywords": [
     "markdown", "markdown preview", "mermaid", "mermaid preview", "diagram", "uml",
     "flowchart", "sequence diagram", "class diagram", "er diagram", "gantt", "c4",
