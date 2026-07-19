@@ -1,0 +1,43 @@
+{
+  "plugin": {
+    "name": "annotron",
+    "version": "1.0.5",
+    "displayName": "\ud83c\udfaf Annotron - AI Artifact Review & Feedback",
+    "description": "Point-and-click annotation editor for AI artifacts. 3-5 second feedback loops. Beautiful HTML rendering. No copy-paste. Zero token cost.",
+    "author": {
+      "name": "Meii",
+      "email": "mailt@creativeforce.io",
+      "url": "https://github.com/hueanmy"
+    }
+  },
+  "submission": {
+    "platforms": [
+      {
+        "name": "Claude.ai Marketplace",
+        "url": "https://claude.ai/plugins",
+        "status": "Ready to submit",
+        "timeline": "3-5 business days"
+      },
+      {
+        "name": "Claude Code Registry",
+        "url": "https://code.claude.ai/plugins",
+        "status": "Ready to submit",
+        "timeline": "1-3 business days"
+      }
+    ],
+    "files": {
+      "plugin_json": "/Users/meii/Documents/annotron/.claude-plugin/plugin.json",
+      "readme": "/Users/meii/Documents/annotron/.claude-plugin/README.md",
+      "icon_png": "/Users/meii/Documents/annotron/.claude-plugin/icon.png",
+      "icon_svg": "/Users/meii/Documents/annotron/.claude-plugin/icon.svg"
+    }
+  },
+  "metadata": {
+    "category": "Productivity",
+    "license": "MIT",
+    "pricing": "Free",
+    "repository": "https://github.com/hueanmy/annotron",
+    "documentation": "https://github.com/hueanmy/annotron#readme",
+    "support": "https://github.com/hueanmy/annotron/issues"
+  }
+}

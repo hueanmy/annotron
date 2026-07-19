@@ -1,0 +1,96 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0078D4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="docGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8F4F8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D4E8F0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bgGradient)"/>
+
+  <!-- Main document -->
+  <g>
+    <!-- Document shadow -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="4" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+
+    <!-- Document shape -->
+    <rect x="100" y="80" width="220" height="280" rx="12" fill="white" filter="url(#shadow)"/>
+
+    <!-- Document corner fold -->
+    <polygon points="300,80 300,130 250,80" fill="#E0E0E0"/>
+
+    <!-- Document lines (content) -->
+    <line x1="120" y1="150" x2="280" y2="150" stroke="#999" stroke-width="3" stroke-linecap="round"/>
+    <line x1="120" y1="180" x2="280" y2="180" stroke="#999" stroke-width="3" stroke-linecap="round"/>
+    <line x1="120" y1="210" x2="240" y2="210" stroke="#999" stroke-width="3" stroke-linecap="round"/>
+    <line x1="120" y1="250" x2="280" y2="250" stroke="#CCC" stroke-width="2" stroke-linecap="round"/>
+    <line x1="120" y1="270" x2="280" y2="270" stroke="#CCC" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- Comment/Annotation bubbles -->
+  <g>
+    <!-- Comment bubble 1 (top-right) -->
+    <g transform="translate(320, 140)">
+      <!-- Bubble -->
+      <rect x="0" y="0" width="120" height="80" rx="8" fill="#FFC107" opacity="0.95"/>
+      <!-- Tail -->
+      <polygon points="20,80 30,100 40,80" fill="#FFC107"/>
+      <!-- Text in bubble -->
+      <circle cx="25" cy="20" r="3" fill="white"/>
+      <circle cx="25" cy="35" r="3" fill="white"/>
+      <circle cx="25" cy="50" r="3" fill="white"/>
+      <line x1="35" y1="20" x2="100" y2="20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="35" y1="35" x2="100" y2="35" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="35" y1="50" x2="85" y2="50" stroke="white" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- Comment bubble 2 (bottom-right) -->
+    <g transform="translate(330, 280)">
+      <!-- Bubble -->
+      <rect x="0" y="0" width="110" height="70" rx="8" fill="#28A745" opacity="0.95"/>
+      <!-- Tail -->
+      <polygon points="15,70 25,90 35,70" fill="#28A745"/>
+      <!-- Text in bubble -->
+      <circle cx="20" cy="15" r="2.5" fill="white"/>
+      <circle cx="20" cy="28" r="2.5" fill="white"/>
+      <line x1="30" y1="15" x2="95" y2="15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="30" y1="28" x2="90" y2="28" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="30" y1="41" x2="85" y2="41" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Checkmark -->
+      <g transform="translate(70, 50)">
+        <circle cx="0" cy="0" r="8" fill="white"/>
+        <path d="M -3,0 L 0,3 L 4,-2" stroke="#28A745" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Arrow showing flow -->
+  <g>
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+        <polygon points="0 0, 10 3, 0 6" fill="white" opacity="0.8"/>
+      </marker>
+    </defs>
+    <path d="M 310 200 Q 340 220 330 250" stroke="white" stroke-width="2.5" fill="none" opacity="0.6" marker-end="url(#arrowhead)" stroke-linecap="round"/>
+  </g>
+
+  <!-- Center focus circle (subtle glow) -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="white" stroke-width="1" opacity="0.15"/>
+
+  <!-- Annotation icon in center (small) -->
+  <g transform="translate(256, 180)" opacity="0.2">
+    <rect x="-30" y="-30" width="60" height="60" rx="8" fill="white"/>
+    <circle cx="-15" cy="-10" r="3" fill="#0078D4"/>
+    <circle cx="0" cy="-10" r="3" fill="#0078D4"/>
+    <circle cx="15" cy="-10" r="3" fill="#0078D4"/>
+    <path d="M -20,5 L 20,5 L 20,20 L -20,20 Z" fill="none" stroke="#0078D4" stroke-width="2" rx="2"/>
+  </g>
+</svg>
