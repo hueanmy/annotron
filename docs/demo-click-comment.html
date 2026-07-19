@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annotron - Click to Comment Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #0078D4;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #0078D4 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+
+        .card-content {
+            padding: 30px;
+        }
+
+        .browser-window {
+            background: #f9f9f9;
+            border: 3px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .browser-titlebar {
+            background: #0078D4;
+            color: white;
+            padding: 12px 15px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .browser-content {
+            padding: 20px;
+            min-height: 300px;
+            background: white;
+        }
+
+        .document-para {
+            color: #333;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            font-size: 1em;
+        }
+
+        .document-para strong {
+            color: #0078D4;
+        }
+
+        /* Interactive click zones */
+        .clickable-text {
+            padding: 2px 4px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .clickable-text:hover {
+            background: rgba(0, 120, 212, 0.1);
+            border-radius: 3px;
+        }
+
+        .clickable-text.active {
+            background: rgba(255, 199, 7, 0.3);
+            border: 2px solid #FFC107;
+            border-radius: 3px;
+        }
+
+        .feedback-panel {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #E8F4F8 0%, #D4E8F0 100%);
+            border: 2px solid #0078D4;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .feedback-panel.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feedback-header {
+            color: #0078D4;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+
+        .feedback-item {
+            background: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #0078D4;
+            border-radius: 5px;
+            font-size: 0.95em;
+            color: #333;
+        }
+
+        .feedback-item strong {
+            color: #0078D4;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .json-display {
+            background: #1e1e1e;
+            color: #00FF00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        .animation-canvas {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f7 100%);
+            border: 3px solid #0078D4;
+            border-radius: 12px;
+            display: block;
+        }
+
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+        }
+
+        .btn-primary {
+            background: #0078D4;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #006CBF;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 120, 212, 0.3);
+        }
+
+        .btn-secondary {
+            background: #FFC107;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #FFB700;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 199, 7, 0.3);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .info-box {
+            background: #E8F4F8;
+            border-left: 4px solid #0078D4;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #0078D4;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #f0f0f0;
+            text-align: center;
+        }
+
+        .stat strong {
+            display: block;
+            color: #0078D4;
+            font-size: 1.3em;
+            margin-bottom: 5px;
+        }
+
+        .stat span {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+
+            .animation-canvas {
+                height: 400px;
+            }
+        }
+
+        .step-indicator {
+            display: inline-block;
+            background: #0078D4;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👆 Click to Comment</h1>
+        <p>The core interaction: select text → add note → feedback flows to agent → changes apply instantly</p>
+    </div>
+
+    <div class="main-container">
+        <div class="card">
+            <div class="card-header">📝 Interactive Browser</div>
+            <div class="card-content">
+                <div class="browser-window">
+                    <div class="browser-titlebar">📄 Document Editor</div>
+                    <div class="browser-content">
+                        <div class="document-para">
+                            Annotron is a review editor for agent-generated artifacts. <span class="clickable-text" onclick="clickText(this, 'When your coding agent creates HTML plans, diagrams, or mockups, giving feedback is usually clumsy.')">When your coding agent creates HTML plans, diagrams, or mockups, <strong>giving feedback is usually clumsy.</strong></span>
+                        </div>
+                        <div class="document-para">
+                            <span class="clickable-text" onclick="clickText(this, 'With annotron, you simply click. Click any element or text to comment.')"><strong>With annotron, you simply click.</strong> Click any element or text to comment.</span> The agent gets precise, structured feedback and applies changes in seconds.
+                        </div>
+                        <div class="document-para">
+                            Watch the agent work live, see updates instantly, and repeat until you're happy. <span class="clickable-text" onclick="clickText(this, 'It\'s loop engineering for artifacts — point at exactly what to change, and watch it happen in real time.')">It's <strong>loop engineering</strong> for artifacts — point at exactly what to change, and watch it happen in real time.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn-primary btn-small" onclick="demoClick1()">Demo 1: Click</button>
+                    <button class="btn-primary btn-small" onclick="demoClick2()">Demo 2: Comment</button>
+                    <button class="btn-secondary btn-small" onclick="resetDemo()">Reset</button>
+                </div>
+
+                <div class="info-box">
+                    <strong>💡 Try it:</strong> Click any highlighted text above to see the feedback flow. Then view the structured JSON being sent to the agent.
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat">
+                        <strong>3</strong>
+                        <span>Data points per comment</span>
+                    </div>
+                    <div class="stat">
+                        <strong>0 prose</strong>
+                        <span>No descriptions needed</span>
+                    </div>
+                    <div class="stat">
+                        <strong>Images</strong>
+                        <span>Attach mockups</span>
+                    </div>
+                    <div class="stat">
+                        <strong>Threads</strong>
+                        <span>Track conversations</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">📤 Structured Feedback</div>
+            <div class="card-content">
+                <div class="feedback-panel" id="feedbackPanel">
+                    <div class="feedback-header">✓ Feedback Ready to Send</div>
+
+                    <div class="feedback-item">
+                        <strong>📍 Element Selected:</strong>
+                        <span id="selectedText">Click text above to select...</span>
+                    </div>
+
+                    <div class="feedback-item">
+                        <strong>🎯 CSS Selector:</strong>
+                        <code id="selectorText" style="color: #0078D4;">.</code>
+                    </div>
+
+                    <div class="feedback-item">
+                        <strong>💬 Your Comment:</strong>
+                        <div style="margin-top: 8px;">
+                            <textarea id="commentBox" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.95em; resize: vertical; height: 60px;" placeholder="Add your feedback here..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="feedback-item">
+                        <strong>🔄 As JSON:</strong>
+                        <div class="json-display" id="jsonOutput"></div>
+                    </div>
+
+                    <button class="btn-primary" style="width: 100%; margin-top: 15px;" onclick="sendFeedback()">📤 Send to Agent</button>
+                </div>
+
+                <div style="padding: 20px; background: #f0f0f0; border-radius: 10px; display: none; text-align: center;" id="successMessage">
+                    <strong style="color: #28A745; font-size: 1.2em;">✓ Feedback Sent!</strong>
+                    <p style="color: #666; margin-top: 10px;">Agent is now applying changes...</p>
+                </div>
+
+                <div class="info-box" style="margin-top: 0;">
+                    <strong>📋 What gets sent:</strong>
+                    <ul style="margin-top: 10px; margin-left: 20px; color: #666;">
+                        <li>Exact CSS selector (targets the right element)</li>
+                        <li>Text content (what you selected)</li>
+                        <li>Your note (what to change)</li>
+                        <li>Images (optional, if attached)</li>
+                    </ul>
+                    <p style="margin-top: 10px; color: #666; font-size: 0.95em;">
+                        No ambiguity. No "can you describe what you mean?" back-and-forth. The agent gets exactly what needs changing.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">🎬 Animation: How It Flows</div>
+            <div class="card-content">
+                <canvas id="flowCanvas" class="animation-canvas"></canvas>
+                <div class="controls">
+                    <button class="btn-primary" onclick="playAnimation()">▶ Play Animation</button>
+                    <button class="btn-secondary" onclick="pauseAnimation()">⏸ Pause</button>
+                </div>
+                <div class="info-box">
+                    <span class="step-indicator">1</span><strong>You click</strong> text in the browser
+                    <br><span class="step-indicator">2</span><strong>Comment bubble</strong> appears
+                    <br><span class="step-indicator">3</span><strong>Data flows</strong> as JSON
+                    <br><span class="step-indicator">4</span><strong>Agent reads</strong> structured feedback
+                    <br><span class="step-indicator">5</span><strong>Changes apply</strong> in 3-5 seconds
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">🚀 Why This Works</div>
+            <div class="card-content">
+                <div style="color: #666; line-height: 1.8;">
+                    <p style="margin-bottom: 15px;">
+                        <strong style="color: #0078D4;">Traditional feedback:</strong> "Can you make the header bigger and add more contrast?"
+                        <br>Agent guesses → You repeat → Loop is slow.
+                    </p>
+                    <p style="margin-bottom: 15px;">
+                        <strong style="color: #0078D4;">With annotron:</strong> Click the header → add note "Bigger, higher contrast"
+                        <br>Agent gets: selector, text, note, images → applies in 3 seconds → you see it live.
+                    </p>
+                    <div class="info-box">
+                        <strong>Result:</strong> Feedback loops close in 3-5 seconds instead of minutes. You stay in flow. The agent gets precise direction.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function clickText(element, fullText) {
+            // Remove active state from all
+            document.querySelectorAll('.clickable-text').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // Add active state
+            element.classList.add('active');
+
+            // Update feedback panel
+            document.getElementById('feedbackPanel').classList.add('active');
+            document.getElementById('selectedText').textContent = fullText;
+            document.getElementById('selectorText').textContent = '.document-para > span';
+            document.getElementById('commentBox').placeholder = 'What would you like to change here?';
+
+            updateJSON();
+        }
+
+        function updateJSON() {
+            const text = document.getElementById('selectedText').textContent;
+            const selector = document.getElementById('selectorText').textContent;
+            const comment = document.getElementById('commentBox').value || '(add your note)';
+
+            const jsonObj = {
+                kind: "text",
+                selector: selector,
+                text: text.substring(0, 50) + '...',
+                note: comment,
+                images: []
+            };
+
+            document.getElementById('jsonOutput').textContent = JSON.stringify(jsonObj, null, 2);
+        }
+
+        function demoClick1() {
+            const elements = document.querySelectorAll('.clickable-text');
+            clickText(elements[0], 'When your coding agent creates HTML plans, diagrams, or mockups, giving feedback is usually clumsy.');
+            document.getElementById('commentBox').value = 'Add more details about why it\'s clumsy';
+            updateJSON();
+        }
+
+        function demoClick2() {
+            const elements = document.querySelectorAll('.clickable-text');
+            clickText(elements[1], 'With annotron, you simply click. Click any element or text to comment.');
+            document.getElementById('commentBox').value = 'Emphasize that this is the KEY feature';
+            updateJSON();
+        }
+
+        function resetDemo() {
+            document.querySelectorAll('.clickable-text').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById('feedbackPanel').classList.remove('active');
+            document.getElementById('commentBox').value = '';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function sendFeedback() {
+            const successMsg = document.getElementById('successMessage');
+            successMsg.style.display = 'block';
+            setTimeout(() => {
+                successMsg.style.display = 'none';
+                resetDemo();
+            }, 3000);
+        }
+
+        // Animation code
+        const canvas = document.getElementById('flowCanvas');
+        const ctx = canvas.getContext('2d');
+        let animationRunning = false;
+        let animationStart = 0;
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawFlow(progress) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const spacing = 100;
+            const y = canvas.height / 2;
+
+            // Step 1: Click
+            drawStep(50, y, '👆', 'Click', progress >= 0);
+
+            // Step 2: Comment
+            drawStep(150, y, '💬', 'Comment', progress >= 0.2);
+            if (progress > 0 && progress < 0.3) {
+                drawArrow(50, y, 150, y, (progress - 0) / 0.2);
+            }
+
+            // Step 3: Data
+            drawStep(250, y, '📤', 'Data', progress >= 0.4);
+            if (progress > 0.2 && progress < 0.5) {
+                drawArrow(150, y, 250, y, (progress - 0.2) / 0.3);
+            }
+
+            // Step 4: Agent
+            drawStep(350, y, '🤖', 'Agent', progress >= 0.6);
+            if (progress > 0.4 && progress < 0.7) {
+                drawArrow(250, y, 350, y, (progress - 0.4) / 0.3);
+            }
+
+            // Step 5: Applied
+            drawStep(450, y, '✓', 'Applied', progress >= 0.8);
+            if (progress > 0.6 && progress < 0.9) {
+                drawArrow(350, y, 450, y, (progress - 0.6) / 0.3);
+            }
+
+            // Completion message
+            if (progress > 0.9) {
+                ctx.fillStyle = 'rgba(40, 167, 69, 0.9)';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.globalAlpha = (progress - 0.9) / 0.1;
+                ctx.fillText('Feedback loop complete!', centerX, y + 80);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawStep(x, y, icon, label, active) {
+            const size = active ? 40 : 30;
+            const alpha = active ? 1 : 0.5;
+
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#0078D4';
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icon, x, y - 3);
+
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText(label, x, y + 55);
+            ctx.globalAlpha = 1;
+        }
+
+        function drawArrow(x1, y1, x2, y2, progress) {
+            const x = x1 + (x2 - x1) * progress;
+            ctx.strokeStyle = '#0078D4';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x1 + 40, y1);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+
+            // Arrow head
+            if (progress > 0.5) {
+                ctx.fillStyle = '#0078D4';
+                ctx.beginPath();
+                ctx.moveTo(x, y2);
+                ctx.lineTo(x - 8, y2 - 8);
+                ctx.lineTo(x - 8, y2 + 8);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function playAnimation() {
+            animationRunning = true;
+            animationStart = performance.now();
+            animate(performance.now());
+        }
+
+        function pauseAnimation() {
+            animationRunning = false;
+        }
+
+        function animate(currentTime) {
+            if (!animationRunning) return;
+
+            const elapsed = (currentTime - animationStart) / 3000;
+            const progress = Math.min(elapsed, 1);
+
+            drawFlow(progress);
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        // Update JSON when comment changes
+        document.getElementById('commentBox').addEventListener('input', updateJSON);
+
+        // Initial draw
+        resizeCanvas();
+        drawFlow(0);
+    </script>
+</body>
+</html>

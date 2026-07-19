@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annotron Animation Demo - Full Story</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0078D4 0%, #9966CC 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .scene-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 20px;
+            background: #f9f9f9;
+            justify-content: center;
+        }
+
+        .scene-buttons button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            background: #0078D4;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .scene-buttons button:hover {
+            background: #006CBF;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 120, 212, 0.3);
+        }
+
+        .scene-buttons button.active {
+            background: #28A745;
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 600px;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .info-panel {
+            padding: 20px;
+            background: #f9f9f9;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .info-panel h3 {
+            color: #0078D4;
+            margin-bottom: 10px;
+        }
+
+        .info-panel p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f0f0f0;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .controls button {
+            padding: 12px 30px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .play-btn {
+            background: #28A745;
+            color: white;
+        }
+
+        .play-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .pause-btn {
+            background: #FFC107;
+            color: #333;
+        }
+
+        .pause-btn:hover {
+            background: #FFB700;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 199, 7, 0.3);
+        }
+
+        .reset-btn {
+            background: #DC3545;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #C82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            margin: 15px 0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0078D4, #28A745);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .timer {
+            text-align: center;
+            color: #666;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .canvas-container {
+                height: 400px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .scene-buttons {
+                flex-direction: column;
+            }
+
+            .scene-buttons button {
+                width: 100%;
+            }
+
+            .controls button {
+                display: block;
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Annotron Animation Demo</h1>
+            <p>Whiteboard-style explainer with cute icons</p>
+        </div>
+
+        <div class="scene-buttons">
+            <button onclick="loadScene('1')" class="active">Scene 1: Problem</button>
+            <button onclick="loadScene('2')">Scene 2: Solution</button>
+            <button onclick="loadScene('3')">Scene 3: Feedback</button>
+            <button onclick="loadScene('4')">Scene 4: Agent</button>
+            <button onclick="loadScene('5')">Scene 5: Loop</button>
+            <button onclick="loadScene('full')">Full Story</button>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="animationCanvas"></canvas>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="info-panel">
+            <h3 id="sceneTitle">Scene 1: The Problem</h3>
+            <p id="sceneDescription">A developer struggles to communicate feedback to an AI agent...</p>
+        </div>
+
+        <div class="controls">
+            <button class="play-btn" onclick="playAnimation()">▶ Play</button>
+            <button class="pause-btn" onclick="pauseAnimation()">⏸ Pause</button>
+            <button class="reset-btn" onclick="resetAnimation()">↻ Reset</button>
+            <div class="timer">
+                <span id="currentTime">0:00</span> / <span id="totalTime">1:30</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentScene = '1';
+        let isPlaying = false;
+        let startTime = 0;
+        let pausedTime = 0;
+        let animationFrameId = null;
+
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Scene data
+        const scenes = {
+            '1': {
+                title: 'Scene 1: The Problem',
+                description: 'A developer struggles with vague feedback to an AI agent. The agent guesses. The feedback loop is broken.',
+                duration: 8000,
+                draw: drawScene1
+            },
+            '2': {
+                title: 'Scene 2: The Solution',
+                description: 'Click any element or text to comment. Structured feedback replaces vague descriptions.',
+                duration: 12000,
+                draw: drawScene2
+            },
+            '3': {
+                title: 'Scene 3: Structured Feedback',
+                description: 'Feedback flows as JSON: selector, text, note. The agent receives precise instructions.',
+                duration: 12000,
+                draw: drawScene3
+            },
+            '4': {
+                title: 'Scene 4: Agent Works',
+                description: 'Terminal shows real-time updates: Read, Edit, Bash. Changes apply in seconds.',
+                duration: 16000,
+                draw: drawScene4
+            },
+            '5': {
+                title: 'Scene 5: Live Loop',
+                description: 'Browser reloads instantly. Changes appear. Repeat until perfect. That\'s loop engineering.',
+                duration: 17000,
+                draw: drawScene5
+            },
+            'full': {
+                title: '🎬 Full Story: Annotron',
+                description: 'Complete 90-second animation showing the entire feedback loop from problem to solution.',
+                duration: 90000,
+                draw: drawFullStory
+            }
+        };
+
+        function loadScene(sceneId) {
+            currentScene = sceneId;
+            resetAnimation();
+
+            // Update button states
+            document.querySelectorAll('.scene-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update info panel
+            const scene = scenes[sceneId];
+            document.getElementById('sceneTitle').textContent = scene.title;
+            document.getElementById('sceneDescription').textContent = scene.description;
+            document.getElementById('totalTime').textContent = formatTime(scene.duration / 1000);
+        }
+
+        function drawScene1(progress) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            // Draw developer (sad face)
+            if (progress > 0.1) {
+                const devProgress = Math.min((progress - 0.1) / 0.2, 1);
+                drawDeveloper(100, centerY, devProgress);
+            }
+
+            // Draw agent cloud
+            if (progress > 0.3) {
+                const agentProgress = Math.min((progress - 0.3) / 0.2, 1);
+                drawAgentCloud(centerX, 100, agentProgress);
+            }
+
+            // Draw document
+            if (progress > 0.5) {
+                const docProgress = Math.min((progress - 0.5) / 0.2, 1);
+                drawDocument(canvas.width - 150, centerY, docProgress);
+            }
+
+            // Draw confused interaction
+            if (progress > 0.7) {
+                const interactionProgress = (progress - 0.7) / 0.3;
+                drawConfusedInteraction(centerX, centerY, interactionProgress);
+            }
+
+            // Draw wavy lines (communication attempt)
+            if (progress > 0.4 && progress < 0.75) {
+                const waveProgress = (progress - 0.4) / 0.35;
+                drawWavyLines(150, centerY, centerX - 50, 100, waveProgress, 0.5);
+            }
+        }
+
+        function drawScene2(progress) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw browser window
+            if (progress > 0) {
+                const browserProgress = Math.min(progress / 0.2, 1);
+                drawBrowserWindow(50, 50, canvas.width - 100, canvas.height - 100, browserProgress);
+            }
+
+            // Draw clicking gesture
+            if (progress > 0.4) {
+                const clickProgress = (progress - 0.4) / 0.3;
+                drawClickGesture(canvas.width / 2, canvas.height / 2 + 50, clickProgress);
+            }
+
+            // Draw comment bubble
+            if (progress > 0.6) {
+                const commentProgress = Math.min((progress - 0.6) / 0.2, 1);
+                drawCommentBubble(canvas.width / 2 + 80, canvas.height / 2 - 20, commentProgress);
+            }
+
+            // Draw agent watching
+            if (progress > 0.8) {
+                const agentProgress = Math.min((progress - 0.8) / 0.2, 1);
+                drawAgentWatching(canvas.width - 100, 80, agentProgress);
+            }
+        }
+
+        function drawScene3(progress) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const leftX = 100;
+            const rightX = canvas.width - 150;
+            const centerY = canvas.height / 2;
+
+            // Draw browser on left
+            drawBrowserWindow(leftX, 50, 300, 200, Math.min(progress / 0.1, 1));
+
+            // Draw JSON in center
+            if (progress > 0.2) {
+                drawJSON(canvas.width / 2 - 100, centerY - 80, (progress - 0.2) / 0.3);
+            }
+
+            // Draw agent on right
+            if (progress > 0.4) {
+                drawAgentCloud(rightX, 100, Math.min((progress - 0.4) / 0.1, 1));
+            }
+
+            // Draw envelope flying
+            if (progress > 0.3 && progress < 0.6) {
+                const envelopeProgress = (progress - 0.3) / 0.3;
+                drawEnvelopeFly(leftX + 150, centerY, rightX, 100, envelopeProgress);
+            }
+
+            // Draw agent reading
+            if (progress > 0.6) {
+                drawAgentReading(rightX, 100, (progress - 0.6) / 0.2);
+            }
+
+            // Draw light bulb (agent understands)
+            if (progress > 0.8) {
+                drawLightBulb(rightX + 50, 50, (progress - 0.8) / 0.2);
+            }
+        }
+
+        function drawScene4(progress) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw terminal on left
+            if (progress > 0) {
+                drawTerminal(50, 100, 400, 400, progress);
+            }
+
+            // Draw file on right
+            if (progress > 0.3) {
+                drawFile(canvas.width - 200, canvas.height / 2 - 50, (progress - 0.3) / 0.2);
+            }
+
+            // Draw icons flowing
+            if (progress > 0.4 && progress < 0.9) {
+                drawToolIcons(progress);
+            }
+        }
+
+        function drawScene5(progress) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 150;
+
+            // Draw cycle: Browser → Agent → Terminal → Browser
+            drawCycle(centerX, centerY, radius, progress);
+        }
+
+        function drawFullStory(progress) {
+            // Combine all scenes with timing
+            if (progress < 0.089) {
+                drawScene1(progress / 0.089);
+            } else if (progress < 0.222) {
+                drawScene2((progress - 0.089) / 0.133);
+            } else if (progress < 0.355) {
+                drawScene3((progress - 0.222) / 0.133);
+            } else if (progress < 0.533) {
+                drawScene4((progress - 0.355) / 0.178);
+            } else {
+                drawScene5((progress - 0.533) / 0.467);
+            }
+        }
+
+        // Helper functions for drawing
+        function drawDeveloper(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress, 1);
+
+            // Head
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(x, y - 30, 25, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sad face
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            // Eyes
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(x - 10, y - 35, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 10, y - 35, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sad mouth
+            ctx.beginPath();
+            ctx.arc(x, y - 20, 8, Math.PI, 0);
+            ctx.stroke();
+
+            // Body
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 40);
+            ctx.stroke();
+
+            // Arms
+            ctx.beginPath();
+            ctx.moveTo(x - 20, y + 10);
+            ctx.lineTo(x + 20, y + 10);
+            ctx.stroke();
+
+            // Legs
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y + 40);
+            ctx.lineTo(x - 10, y + 60);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y + 40);
+            ctx.lineTo(x + 10, y + 60);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawAgentCloud(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress, 1);
+
+            ctx.strokeStyle = '#0078D4';
+            ctx.fillStyle = 'rgba(0, 120, 212, 0.1)';
+            ctx.lineWidth = 3;
+
+            // Cloud shape
+            ctx.beginPath();
+            ctx.arc(x - 30, y, 30, 0, Math.PI * 2);
+            ctx.arc(x + 30, y, 30, 0, Math.PI * 2);
+            ctx.arc(x, y - 20, 25, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Sparkles
+            for (let i = 0; i < 3; i++) {
+                const angle = (i / 3) * Math.PI * 2;
+                const sx = x + Math.cos(angle) * 50;
+                const sy = y + Math.sin(angle) * 50;
+                drawSparkle(sx, sy, 0.8);
+            }
+
+            ctx.restore();
+        }
+
+        function drawSparkle(x, y, alpha = 1) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.moveTo(x, y - 8);
+            ctx.lineTo(x + 8, y);
+            ctx.lineTo(x, y + 8);
+            ctx.lineTo(x - 8, y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawDocument(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress, 1);
+
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+
+            // Document rectangle
+            ctx.fillRect(x - 40, y - 60, 80, 120);
+            ctx.strokeRect(x - 40, y - 60, 80, 120);
+
+            // Lines on document
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x - 35, y - 50 + i * 20);
+                ctx.lineTo(x + 35, y - 50 + i * 20);
+                ctx.stroke();
+            }
+
+            // X marks (errors)
+            ctx.strokeStyle = '#DC3545';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 2; i++) {
+                const markX = x - 20 + i * 40;
+                const markY = y + 20;
+                ctx.beginPath();
+                ctx.moveTo(markX - 8, markY - 8);
+                ctx.lineTo(markX + 8, markY + 8);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(markX + 8, markY - 8);
+                ctx.lineTo(markX - 8, markY + 8);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawWavyLines(x1, y1, x2, y2, progress, opacity) {
+            ctx.save();
+            ctx.globalAlpha = opacity * progress;
+            ctx.strokeStyle = '#FFC107';
+            ctx.lineWidth = 3;
+
+            const steps = 5;
+            for (let i = 0; i < steps; i++) {
+                const delay = i * 0.2;
+                if (progress >= delay) {
+                    const p = Math.min((progress - delay) / 0.2, 1);
+                    const x = x1 + (x2 - x1) * p;
+                    const y = y1 + Math.sin(p * Math.PI * 2) * 20;
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawConfusedInteraction(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = progress;
+
+            // Confused emoji
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(x + 100, y - 80, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(x + 95, y - 85, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 105, y - 85, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x + 100, y - 75, 5, 0, Math.PI);
+            ctx.stroke();
+
+            // Question marks
+            ctx.font = 'bold 30px Arial';
+            ctx.fillStyle = '#0078D4';
+            ctx.textAlign = 'center';
+            ctx.fillText('?', x + 100, y - 40);
+            ctx.fillText('?', x + 140, y - 50);
+
+            ctx.restore();
+        }
+
+        function drawBrowserWindow(x, y, w, h, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress, 1);
+
+            // Window frame (hand-drawn effect)
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.fillStyle = '#f9f9f9';
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeRect(x, y, w, h);
+
+            // Title bar
+            ctx.fillStyle = '#0078D4';
+            ctx.fillRect(x, y, w, 30);
+
+            // Title text
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Browser', x + 10, y + 20);
+
+            // Content area
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + 10, y + 45 + i * 20);
+                ctx.lineTo(x + w - 10, y + 45 + i * 20);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawClickGesture(x, y, progress) {
+            ctx.save();
+
+            // Hand cursor
+            const handAlpha = Math.sin(progress * Math.PI) * 0.7;
+            ctx.globalAlpha = handAlpha;
+            ctx.fillStyle = '#FFB366';
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + 5, y - 15);
+            ctx.lineTo(x + 10, y - 10);
+            ctx.lineTo(x + 8, y + 5);
+            ctx.closePath();
+            ctx.fill();
+
+            // Ripple effect
+            const rippleProgress = progress;
+            ctx.globalAlpha = 1 - rippleProgress;
+            ctx.strokeStyle = '#0078D4';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, 20 + rippleProgress * 40, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawCommentBubble(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress, 1);
+
+            // Bubble
+            ctx.fillStyle = '#E8F4F8';
+            ctx.strokeStyle = '#0078D4';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x - 60, y - 20);
+            ctx.lineTo(x + 60, y - 20);
+            ctx.lineTo(x + 60, y + 20);
+            ctx.lineTo(x + 10, y + 20);
+            ctx.lineTo(x, y + 35);
+            ctx.lineTo(x - 10, y + 20);
+            ctx.lineTo(x - 60, y + 20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Text
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Add more detail here', x, y + 5);
+
+            ctx.restore();
+        }
+
+        function drawAgentWatching(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress, 1);
+
+            // Eyes watching
+            ctx.fillStyle = '#0078D4';
+            ctx.beginPath();
+            ctx.arc(x - 10, y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 10, y, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils (looking at feedback)
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(x - 10 + progress * 3, y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 10 + progress * 3, y, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawJSON(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress, 1);
+
+            const text = [
+                '{',
+                '  "selector": "h2.title",',
+                '  "text": "Current title",',
+                '  "note": "Add more detail"',
+                '}'
+            ];
+
+            ctx.fillStyle = '#f0f0f0';
+            ctx.strokeStyle = '#0078D4';
+            ctx.lineWidth = 2;
+            ctx.fillRect(x - 80, y - 60, 160, 110);
+            ctx.strokeRect(x - 80, y - 60, 160, 110);
+
+            ctx.fillStyle = '#333';
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'left';
+            text.forEach((line, i) => {
+                ctx.fillText(line, x - 70, y - 40 + i * 18);
+            });
+
+            ctx.restore();
+        }
+
+        function drawEnvelopeFly(x1, y1, x2, y2, progress) {
+            ctx.save();
+
+            const x = x1 + (x2 - x1) * progress;
+            const y = y1 + (y2 - y2) * progress + Math.sin(progress * Math.PI) * 30;
+
+            // Envelope
+            ctx.fillStyle = '#FFE5B4';
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.fillRect(x - 20, y - 12, 40, 24);
+            ctx.strokeRect(x - 20, y - 12, 40, 24);
+
+            // Envelope flap
+            ctx.beginPath();
+            ctx.moveTo(x - 20, y - 12);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + 20, y - 12);
+            ctx.stroke();
+
+            // Trail
+            ctx.globalAlpha = 0.5;
+            ctx.strokeStyle = '#0078D4';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath();
+            ctx.moveTo(x1 + 20, y1);
+            ctx.quadraticCurveTo(x1 + (x2 - x1) * 0.5, y1 + 30, x, y);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawAgentReading(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = progress;
+
+            // Agent eyes focusing
+            ctx.fillStyle = '#0078D4';
+            ctx.beginPath();
+            ctx.arc(x - 15, y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 15, y, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils concentrating
+            ctx.fillStyle = '#333';
+            const pupilOffset = progress * 2;
+            ctx.beginPath();
+            ctx.arc(x - 15, y + pupilOffset, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 15, y + pupilOffset, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawLightBulb(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress * 2, 1);
+
+            // Glow
+            ctx.fillStyle = `rgba(255, 215, 0, ${progress * 0.5})`;
+            ctx.beginPath();
+            ctx.arc(x, y, 50, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bulb
+            ctx.fillStyle = '#FFD700';
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y - 10, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Base
+            ctx.fillRect(x - 8, y + 10, 16, 8);
+            ctx.strokeRect(x - 8, y + 10, 16, 8);
+
+            // Rays
+            const rays = 8;
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < rays; i++) {
+                const angle = (i / rays) * Math.PI * 2;
+                const x1 = x + Math.cos(angle) * 30;
+                const y1 = y - 10 + Math.sin(angle) * 30;
+                const x2 = x + Math.cos(angle) * 45;
+                const y2 = y - 10 + Math.sin(angle) * 45;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawTerminal(x, y, w, h, progress) {
+            ctx.save();
+
+            // Terminal window
+            ctx.fillStyle = '#1e1e1e';
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeRect(x, y, w, h);
+
+            // Title bar
+            ctx.fillStyle = '#0078D4';
+            ctx.fillRect(x, y, w, 25);
+
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Terminal', x + 10, y + 17);
+
+            // Terminal content (lines appear with typewriter effect)
+            const lines = [
+                '$ annotron agent document.md',
+                '✓ Feedback received',
+                '✓ Reading document.md',
+                '✓ Applying changes',
+                '✓ Saving file'
+            ];
+
+            ctx.fillStyle = '#00FF00';
+            ctx.font = '11px monospace';
+            const textProgress = progress * lines.length;
+
+            lines.forEach((line, i) => {
+                if (textProgress > i) {
+                    const charProgress = Math.min(textProgress - i, 1);
+                    const displayLine = line.substring(0, Math.floor(line.length * charProgress));
+                    ctx.fillText(displayLine, x + 15, y + 55 + i * 25);
+
+                    // Checkmark animation
+                    if (line.startsWith('✓') && charProgress > 0.5) {
+                        const checkProgress = (charProgress - 0.5) / 0.5;
+                        drawCheckMark(x + 360, y + 55 + i * 25 - 10, checkProgress);
+                    }
+                }
+            });
+
+            ctx.restore();
+        }
+
+        function drawCheckMark(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress, 1);
+
+            ctx.strokeStyle = '#28A745';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y);
+            ctx.lineTo(x, y + 8);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y + 8);
+            ctx.lineTo(x + 12, y - 8);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawFile(x, y, progress) {
+            ctx.save();
+            ctx.globalAlpha = Math.min(progress, 1);
+
+            // File icon
+            ctx.fillStyle = '#FFF';
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.fillRect(x, y, 60, 80);
+            ctx.strokeRect(x, y, 60, 80);
+
+            // File corner fold
+            ctx.beginPath();
+            ctx.moveTo(x + 60, y);
+            ctx.lineTo(x + 45, y);
+            ctx.lineTo(x + 45, y + 15);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // File name
+            ctx.fillStyle = '#333';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('document', x + 30, y + 45);
+            ctx.fillText('.md', x + 30, y + 58);
+
+            // Edit symbol
+            ctx.fillStyle = '#28A745';
+            ctx.beginPath();
+            ctx.arc(x + 45, y + 65, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('✏', x + 45, y + 70);
+
+            // Glow
+            ctx.globalAlpha = progress * 0.5;
+            ctx.strokeStyle = '#28A745';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - 5, y - 5, 70, 90);
+
+            ctx.restore();
+        }
+
+        function drawToolIcons(progress) {
+            const icons = [
+                { label: '📖 Read', x: 150, color: '#0078D4' },
+                { label: '✏ Edit', x: 250, color: '#FFC107' },
+                { label: '⚙ Bash', x: 350, color: '#9966CC' }
+            ];
+
+            icons.forEach(icon => {
+                const delay = (icon.x - 150) / 200;
+                const iconProgress = Math.max((progress - delay - 0.4) / 0.3, 0);
+
+                if (iconProgress > 0 && iconProgress <= 1) {
+                    const x = icon.x;
+                    const y = canvas.height / 2 + Math.sin(iconProgress * Math.PI) * 50;
+                    const alpha = Math.sin(iconProgress * Math.PI);
+
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+
+                    // Icon box
+                    ctx.fillStyle = icon.color;
+                    ctx.fillRect(x - 20, y - 20, 40, 40);
+
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(icon.label[0], x, y);
+
+                    ctx.restore();
+                }
+            });
+        }
+
+        function drawCycle(centerX, centerY, radius, progress) {
+            const positions = [
+                { x: centerX + radius, y: centerY, label: 'Browser', icon: '🌐' },
+                { x: centerX, y: centerY - radius, label: 'Agent', icon: '🤖' },
+                { x: centerX - radius, y: centerY, label: 'Terminal', icon: '💻' },
+                { x: centerX, y: centerY + radius, label: 'File', icon: '📄' }
+            ];
+
+            // Draw cycle arrows
+            ctx.strokeStyle = '#0078D4';
+            ctx.lineWidth = 3;
+            ctx.fillStyle = 'none';
+
+            for (let i = 0; i < positions.length; i++) {
+                const from = positions[i];
+                const to = positions[(i + 1) % positions.length];
+
+                const arrowProgress = Math.max(Math.min((progress - i * 0.25) / 0.25, 1), 0);
+
+                ctx.globalAlpha = arrowProgress;
+                ctx.beginPath();
+                ctx.moveTo(from.x, from.y);
+                ctx.quadraticCurveTo(centerX, centerY,
+                    from.x + (to.x - from.x) * arrowProgress,
+                    from.y + (to.y - from.y) * arrowProgress);
+                ctx.stroke();
+            }
+
+            // Draw nodes
+            positions.forEach((pos, i) => {
+                ctx.globalAlpha = 1;
+
+                // Circle
+                ctx.fillStyle = '#E8F4F8';
+                ctx.strokeStyle = '#0078D4';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 40, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Icon
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(pos.icon, pos.x, pos.y - 10);
+
+                // Label
+                ctx.font = '12px Arial';
+                ctx.fillText(pos.label, pos.x, pos.y + 20);
+            });
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function animate(currentTime) {
+            if (!isPlaying) {
+                animationFrameId = requestAnimationFrame(animate);
+                return;
+            }
+
+            if (startTime === 0) {
+                startTime = currentTime;
+            }
+
+            const elapsed = (currentTime - startTime) + pausedTime;
+            const scene = scenes[currentScene];
+            const progress = Math.min(elapsed / scene.duration, 1);
+
+            scene.draw(progress);
+
+            // Update progress bar and timer
+            const progressPercent = (progress * 100);
+            document.getElementById('progressFill').style.width = progressPercent + '%';
+            document.getElementById('currentTime').textContent = formatTime(elapsed / 1000);
+
+            if (progress < 1) {
+                animationFrameId = requestAnimationFrame(animate);
+            } else {
+                isPlaying = false;
+                startTime = 0;
+            }
+        }
+
+        function playAnimation() {
+            if (!isPlaying) {
+                isPlaying = true;
+                if (startTime === 0) {
+                    pausedTime = 0;
+                }
+                animate(performance.now());
+            }
+        }
+
+        function pauseAnimation() {
+            isPlaying = false;
+            pausedTime += performance.now() - startTime;
+            startTime = 0;
+        }
+
+        function resetAnimation() {
+            isPlaying = false;
+            startTime = 0;
+            pausedTime = 0;
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('currentTime').textContent = '0:00';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Start drawing initial scene
+        resetAnimation();
+    </script>
+</body>
+</html>

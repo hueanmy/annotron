@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annotron Loop Engineering - Interactive Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0078D4 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section h2 {
+            color: #0078D4;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .section p {
+            color: #666;
+            line-height: 1.8;
+            font-size: 1.05em;
+        }
+
+        .visualization {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f7 100%);
+            border-radius: 15px;
+            border: 3px solid #0078D4;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 120, 212, 0.1);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0078D4 0%, #005BAF 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 120, 212, 0.3);
+        }
+
+        .btn-secondary {
+            background: #FFC107;
+            color: #333;
+            border: 2px solid #FFB700;
+        }
+
+        .btn-secondary:hover {
+            background: #FFB700;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 199, 7, 0.3);
+        }
+
+        .btn-danger {
+            background: #DC3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(220, 53, 69, 0.3);
+        }
+
+        .progress-container {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0078D4, #28A745);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .timer {
+            text-align: center;
+            color: #666;
+            font-weight: 600;
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #E8F4F8 0%, #D4E8F0 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #0078D4;
+            text-align: center;
+        }
+
+        .stat-card strong {
+            color: #0078D4;
+            font-size: 1.3em;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stat-card span {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            padding: 12px;
+            margin: 8px 0;
+            background: #f0f0f0;
+            border-left: 4px solid #0078D4;
+            border-radius: 5px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .feature-list li strong {
+            color: #0078D4;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .visualization {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .content {
+                padding: 20px;
+                gap: 20px;
+            }
+
+            .visualization {
+                height: 300px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            button {
+                padding: 12px 20px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Loop Engineering</h1>
+            <p>Watch how Annotron closes the feedback loop between you and your AI agent</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h2>The Feedback Cycle</h2>
+                <p>
+                    This is where annotron shines: <strong>precise feedback → instant results</strong>.
+                </p>
+                <p>
+                    You click an element or select text in your browser. The feedback carries:
+                </p>
+                <ul class="feature-list">
+                    <li><strong>🎯 CSS Selector</strong> - Exactly which element you clicked</li>
+                    <li><strong>📝 Text Content</strong> - What you selected</li>
+                    <li><strong>💬 Your Note</strong> - What to change</li>
+                    <li><strong>🖼️ Images</strong> - Mockups or references (optional)</li>
+                </ul>
+                <p>
+                    The agent receives this structured feedback, applies changes, and your browser reloads instantly.
+                </p>
+
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="timer">
+                        <span id="currentTime">0:00</span> / <span id="totalTime">0:20</span>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn-primary" onclick="playAnimation()">▶ Play</button>
+                    <button class="btn-secondary" onclick="pauseAnimation()">⏸ Pause</button>
+                    <button class="btn-danger" onclick="resetAnimation()">↻ Reset</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-card">
+                        <strong>3-5 seconds</strong>
+                        <span>Agent applies changes</span>
+                    </div>
+                    <div class="stat-card">
+                        <strong>Live</strong>
+                        <span>Browser reloads instantly</span>
+                    </div>
+                    <div class="stat-card">
+                        <strong>0 setup</strong>
+                        <span>Just click and comment</span>
+                    </div>
+                    <div class="stat-card">
+                        <strong>Repeat</strong>
+                        <span>Until perfect</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="visualization">
+                    <canvas id="animationCanvas"></canvas>
+                </div>
+                <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; border-left: 4px solid #28A745;">
+                    <strong style="color: #28A745;">Try it:</strong>
+                    <p style="margin-top: 8px; color: #666;">
+                        1. Click <strong>Play</strong> to see the feedback loop in action<br>
+                        2. Watch how feedback flows from browser → agent → terminal → file → browser<br>
+                        3. Notice: changes apply in ~3 seconds, fully automated
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let isPlaying = false;
+        let startTime = 0;
+        let pausedTime = 0;
+        const ANIMATION_DURATION = 20000; // 20 seconds
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawBackground() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawComponent(x, y, label, icon, color, scale = 1) {
+            const size = 50 * scale;
+
+            // Circle background
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Icon
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${30 * scale}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icon, x, y - 5);
+
+            // Label
+            ctx.fillStyle = '#333';
+            ctx.font = `bold ${12 * scale}px Arial`;
+            ctx.fillText(label, x, y + size + 25);
+        }
+
+        function drawArrow(fromX, fromY, toX, toY, progress = 1, color = '#0078D4') {
+            const headlen = 15;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+
+            // Calculate arrow end point
+            const distance = Math.sqrt(Math.pow(toX - fromX, 2) + Math.pow(toY - fromY, 2));
+            const endX = fromX + distance * progress * Math.cos(angle);
+            const endY = fromY + distance * progress * Math.sin(angle);
+
+            // Draw line
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            // Draw arrow head
+            if (progress > 0.8) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 6), endY - headlen * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 6), endY - headlen * Math.sin(angle + Math.PI / 6));
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function animate(currentTime) {
+            if (!isPlaying) {
+                requestAnimationFrame(animate);
+                return;
+            }
+
+            if (startTime === 0) {
+                startTime = currentTime;
+            }
+
+            const elapsed = (currentTime - startTime) + pausedTime;
+            const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
+
+            drawBackground();
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 120;
+
+            // Calculate positions for 4 components in a circle
+            const positions = [
+                { x: centerX + radius, y: centerY, label: 'Browser', icon: '🌐', color: '#0078D4' },
+                { x: centerX, y: centerY - radius, label: 'Agent', icon: '🤖', color: '#764ba2' },
+                { x: centerX - radius, y: centerY, label: 'Terminal', icon: '💻', color: '#FFC107' },
+                { x: centerX, y: centerY + radius, label: 'File', icon: '📄', color: '#28A745' }
+            ];
+
+            // Draw cycle path
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            positions.forEach((pos, i) => {
+                if (i === 0) ctx.moveTo(pos.x, pos.y);
+                else ctx.lineTo(pos.x, pos.y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw rotating arrows showing cycle
+            for (let i = 0; i < 4; i++) {
+                const from = positions[i];
+                const to = positions[(i + 1) % 4];
+
+                const arrowProgress = Math.max(Math.min((progress - i * 0.25) / 0.25, 1), 0);
+
+                if (arrowProgress > 0) {
+                    const midX = (from.x + to.x) / 2;
+                    const midY = (from.y + to.y) / 2;
+
+                    ctx.globalAlpha = Math.sin(arrowProgress * Math.PI);
+                    drawArrow(from.x, from.y, to.x, to.y, arrowProgress, '#0078D4');
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            // Draw components
+            positions.forEach((pos, i) => {
+                const scale = i < Math.ceil(progress * 4) ? 1 : 0.8;
+                drawComponent(pos.x, pos.y, pos.label, pos.icon, pos.color, scale);
+
+                // Add pulse animation
+                if (i === Math.floor(progress * 4) % 4) {
+                    ctx.strokeStyle = pos.color;
+                    ctx.lineWidth = 2;
+                    const pulseSize = 60 + Math.sin(progress * Math.PI * 10) * 15;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, pulseSize, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
+
+            // Draw activity descriptions
+            const activities = [
+                { step: 0, text: '💬 You comment on text', y: 30 },
+                { step: 0.25, text: '📤 Feedback sent to agent', y: 30 },
+                { step: 0.5, text: '⚙️ Agent applies changes', y: 30 },
+                { step: 0.75, text: '🔄 Browser reloads', y: 30 }
+            ];
+
+            activities.forEach(activity => {
+                const activityProgress = Math.max(Math.min((progress - activity.step) / 0.25, 1), 0);
+                ctx.globalAlpha = Math.sin(activityProgress * Math.PI);
+
+                ctx.fillStyle = '#0078D4';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(activity.text, centerX, activity.y);
+
+                ctx.globalAlpha = 1;
+            });
+
+            // Draw cycle count
+            const cycleNumber = Math.floor(progress * 4) + 1;
+            ctx.fillStyle = '#666';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Cycle ${Math.min(cycleNumber, 4)} of 4`, centerX, canvas.height - 30);
+
+            // Update progress
+            const progressPercent = progress * 100;
+            document.getElementById('progressFill').style.width = progressPercent + '%';
+            document.getElementById('currentTime').textContent = formatTime(elapsed / 1000);
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                isPlaying = false;
+                startTime = 0;
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function playAnimation() {
+            if (!isPlaying) {
+                isPlaying = true;
+                if (startTime === 0) {
+                    pausedTime = 0;
+                }
+                animate(performance.now());
+            }
+        }
+
+        function pauseAnimation() {
+            isPlaying = false;
+            pausedTime += performance.now() - startTime;
+            startTime = 0;
+        }
+
+        function resetAnimation() {
+            isPlaying = false;
+            startTime = 0;
+            pausedTime = 0;
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('currentTime').textContent = '0:00';
+            drawBackground();
+        }
+
+        // Initial render
+        resetAnimation();
+    </script>
+</body>
+</html>
