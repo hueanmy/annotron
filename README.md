@@ -17,7 +17,7 @@ Local, browser-based review editor for **agent-generated HTML artifacts** — an
 
 ## Demo
 
-[![annotron in action](docs/annotron-demo.gif)](https://www.youtube.com/@studyingwithmeii)
+[![annotron in action](docs/annotron-demo-final.gif)](https://www.youtube.com/@studyingwithmeii)
 
 **Quick demo:** Run `annotron architecture-demo.md --agent` → opens in your browser with **outline navigation** (jump between sections), **outline sidebar** (collapse/expand with Ctrl+L), point-and-click **annotations** (comment on any element or text), **auto-apply feedback loop** (changes apply in real-time), and live **activity mirror** (watch the agent work). 
 

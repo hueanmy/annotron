@@ -2,7 +2,7 @@
 
 **Preview Markdown and HTML with live Mermaid diagrams, then click to comment.** Right‑click any `.md` or `.html` file → **Open in annotron** → review it point‑and‑click in your browser: comment on any element or text selection, render `mermaid` diagrams, edit the Markdown source and **Save** to re‑render, and (optionally) drive an AI‑agent feedback loop.
 
-![annotron demo](https://raw.githubusercontent.com/hueanmy/annotron/main/docs/annotron-demo.gif)
+![annotron demo](https://raw.githubusercontent.com/hueanmy/annotron/main/docs/annotron-demo-final.gif)
 
 ---
 
