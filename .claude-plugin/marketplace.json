@@ -10,16 +10,17 @@
         "source": "github",
         "repo": "hueanmy/annotron"
       },
-      "version": "1.0.0",
-      "description": "Local review editor for agent-generated HTML artifacts.",
+      "version": "1.0.5",
+      "displayName": "Annotron - AI Artifact Review",
+      "description": "Point-and-click annotation editor for AI artifacts. 3-5 second feedback loops. Beautiful HTML rendering.",
       "category": "productivity",
       "keywords": [
-        "html",
-        "artifacts",
-        "review",
-        "feedback",
         "annotation",
-        "ai-agents"
+        "feedback",
+        "human-in-the-loop",
+        "ai-agents",
+        "artifacts",
+        "review"
       ]
     }
   ]
