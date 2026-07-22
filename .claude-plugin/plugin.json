@@ -1,6 +1,6 @@
 {
   "name": "annotron",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "displayName": "Annotron - AI Artifact Review",
   "description": "Point-and-click annotation editor for AI artifacts. 3-5 second feedback loops. Beautiful HTML rendering. No copy-paste.",
   "author": "Meii",

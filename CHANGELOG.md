@@ -2,6 +2,17 @@
 
 All notable changes to annotron are documented in this file.
 
+## [1.1.0] - 2026-07-23
+
+### ✨ Added
+
+- **Inline text edit in Annotate mode** — selecting text now shows an **Edit** action beside Comment. Edit turns the selection into an input to retype or delete it, writing straight to the `.md` source (new `/edit-text` endpoint) — no agent round-trip. Offered only when the selection maps to a single exact run in the source (unique, or disambiguated by surrounding context), so formatted/ambiguous selections never edit blind. Diagrams, code, and tables are untouched.
+
+### 🐛 Fixed
+
+- **All Mermaid diagram types now render.** Sequence, state, and mindmap (which merslim can't lay out headless) previously fell back to a dark ASCII block; they now render as real diagrams via a lazily-injected client-side mermaid runtime. merslim SVG is still used for the 11 headless types (flowchart, class, er, pie, gantt, journey, timeline, c4, architecture, gitgraph, quadrant). Any unrecognized type also falls through to mermaid — nothing renders as raw code.
+- **Markdown mode is server-rendered end to end** — opening a `.md` renders it (diagrams included) and live-reloads on Save; the file watcher keeps the preview in sync as the source changes.
+
 ## [1.0.0] - 2026-07-18
 
 ### 🎉 Major Release: Loop Engineering & AI Agent Integration

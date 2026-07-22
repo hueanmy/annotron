@@ -1,6 +1,6 @@
 {
   "name": "annotron",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Human-in-the-loop review editor for AI agents. Point-and-click annotate HTML/Markdown artifacts, send structured feedback to Claude Code, watch the integrated agent loop auto-apply changes live via loop engineering, browse outline navigation for docs, then finalize & download. Zero setup — just `--agent` and annotate.",
   "type": "module",
   "bin": {

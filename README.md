@@ -39,11 +39,12 @@ Agents (Claude Code, etc.) produce rich HTML plans, diagrams, reports, and mocku
 
 ### Review & annotation
 - **Point-and-click annotations** — comment on any element or text selection; feedback carries the CSS selector, the text, and your note.
+- **Inline text edit** — selecting plain text also offers **Edit** (beside Comment) to retype or delete it straight into the `.md` source, no agent round-trip. Shown only when the selection maps to an exact spot in the source, so it never edits blind.
 - **Annotation threads & history** — per-annotation conversation threads, persisted to a sidecar file, plus a history tab of past rounds.
 - **Image attachments** — paste or upload images into the composer or any annotation reply/note; the agent reads them by path.
 
 ### Documents & diagrams
-- **Markdown mode with diagrams** — open a `.md` and annotron renders it to HTML, turning ` ```mermaid ` blocks into inline SVG via [merslim](https://www.npmjs.com/package/merslim) (great for architecture docs / UML). An editable **Markdown pane** + **Save** button (⌘/Ctrl+S) sync your edits back to the `.md` source.
+- **Markdown mode with diagrams — every Mermaid type** — open a `.md` and annotron renders it to HTML, turning ` ```mermaid ` blocks into inline SVG via [merslim](https://www.npmjs.com/package/merslim) (flowchart, class, ER, pie, gantt, journey, timeline, C4, architecture, gitgraph, quadrant — zero runtime). Types merslim can't lay out headless (sequence, state, mindmap) — and any newer mermaid type — fall back to a lazily-loaded mermaid runtime, so **all diagrams render** (nothing shows as raw code). An editable **Markdown pane** + **Save** button (⌘/Ctrl+S) sync your edits back to the `.md` source.
 - **Outline navigation sidebar** — for Markdown files with multiple sections, an auto-generated **outline sidebar** shows h1–h4 headings with visual hierarchy. Click any heading to jump to that section; toggle with the collapse button (`‹`/`›`) or **Ctrl+L** to expand/collapse. State persists across sessions.
 
 ### Agent loop & loop engineering
