@@ -13,8 +13,9 @@
  * Usage:
  *   node manual-results.mjs gen <epicArtifactsDir>
  *       Scans <dir>/TEST-CASES/*.md, extracts all rows whose first cell matches
- *       LUMA-*-TC-*, writes/merges <dir>/MANUAL-RESULTS.md. Existing Result/Notes
- *       are preserved; new cases are appended with Result=Untested.
+ *       <APP>-<FEATURE>-TC-<N> (any uppercase prefix), writes/merges
+ *       <dir>/MANUAL-RESULTS.md. Existing Result/Notes are preserved; new cases
+ *       are appended with Result=Untested.
  *
  *   node manual-results.mjs render <MANUAL-RESULTS.md> [out.html]
  *       Renders the manual-results markdown to HTML with editable form controls in
@@ -34,7 +35,7 @@ import { marked, Renderer } from './vendor/marked.esm.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const RESULT_OPTIONS = ['Untested', 'Pass', 'Fail', 'N/A'];
-const TC_ID_RE = /^LUMA-[A-Z]+-TC-\d+$/;
+const TC_ID_RE = /^[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-TC-\d+$/;
 
 // ── Markdown table parsing ─────────────────────────────────────────────────
 

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 300" width="360" height="300" fill="none">
+<g transform="translate(120 8) scale(1.0)"><path d="M46.5 26.6 A36 36 0 1 0 73.5 26.6" stroke="#2741F1" stroke-width="12" stroke-linecap="round" fill="none"></path><path d="M64 15 L83 20 L76 37 Z" fill="#2741F1"></path><circle cx="60" cy="17" r="9" fill="#2741F1"></circle></g>
+<text x="180" y="215" text-anchor="middle" style="font-family:&#39;Inter&#39;,&#39;Segoe UI&#39;,Helvetica,Arial,sans-serif" font-size="60" font-weight="600" letter-spacing="-2.1" fill="#141430">annotron</text>
+<text x="180" y="250" text-anchor="middle" style="font-family:&#39;Inter&#39;,&#39;Segoe UI&#39;,Helvetica,Arial,sans-serif" font-size="16" font-weight="600" letter-spacing="5.4" fill="#2741F1">REVIEW THE LOOP</text>
+</svg>

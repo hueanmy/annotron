@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>annotron — AI Artifact Review</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .tagline {
+            font-size: 18px;
+            opacity: 0.95;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .content {
+            padding: 60px 40px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-bottom: 48px;
+        }
+
+        @media (max-width: 600px) {
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .feature {
+            text-align: left;
+        }
+
+        .feature-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .feature-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .cta-section {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .cta-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .cta-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9ff;
+            transform: translateY(-2px);
+        }
+
+        .youtube-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer {
+            border-top: 1px solid #eee;
+            padding: 32px 40px;
+            text-align: center;
+            background: #fafbfc;
+        }
+
+        .footer-text {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 12px;
+        }
+
+        .links {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .links a:hover {
+            opacity: 0.7;
+        }
+
+        .demo-preview {
+            margin-bottom: 32px;
+            background: #f0f4ff;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .demo-preview-text {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .demo-image {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            background: #e0e7ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="logo">annotron</div>
+                <div class="tagline">AI-Powered Artifact Review</div>
+                <div class="subtitle">Point-and-click feedback for agent-generated HTML & Markdown</div>
+            </div>
+
+            <div class="content">
+                <div class="cta-section">
+                    <div class="cta-title">✨ Watch How It Works</div>
+                    <div class="cta-description">
+                        See annotron in action: collaborative editing with AI agents, real-time feedback loops, and live architecture diagrams.
+                    </div>
+                    <div class="button-group">
+                        <a href="https://www.youtube.com/@studyingwithmeii" class="btn btn-primary" target="_blank">
+                            <span class="youtube-cta">
+                                <span>▶</span>
+                                <span>Watch Full Demo on YouTube</span>
+                            </span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="features">
+                    <div class="feature">
+                        <div class="feature-icon">💬</div>
+                        <div class="feature-title">Point-and-Click Annotations</div>
+                        <div class="feature-desc">Click any element or text to add comments directly on the rendered artifact.</div>
+                    </div>
+
+                    <div class="feature">
+                        <div class="feature-icon">🤖</div>
+                        <div class="feature-title">Auto-Apply Feedback Loop</div>
+                        <div class="feature-desc">Feedback automatically applies in real-time. Watch the agent work in your browser.</div>
+                    </div>
+
+                    <div class="feature">
+                        <div class="feature-icon">📋</div>
+                        <div class="feature-title">Outline Navigation</div>
+                        <div class="feature-desc">Jump between sections, collapse/expand sidebar with keyboard shortcuts.</div>
+                    </div>
+
+                    <div class="feature">
+                        <div class="feature-icon">🎨</div>
+                        <div class="feature-title">Live Markdown Editing</div>
+                        <div class="feature-desc">Edit Markdown source and diagrams with instant live preview.</div>
+                    </div>
+
+                    <div class="feature">
+                        <div class="feature-icon">📥</div>
+                        <div class="feature-title">Download & Finalize</div>
+                        <div class="feature-desc">Export clean, production-ready artifacts when you're done.</div>
+                    </div>
+
+                    <div class="feature">
+                        <div class="feature-icon">🔒</div>
+                        <div class="feature-title">Local & Secure</div>
+                        <div class="feature-desc">Runs entirely in your browser. No cloud, no accounts needed.</div>
+                    </div>
+                </div>
+
+                <div class="cta-section" style="background: #fff8f0; border: 2px solid #ffd6a5;">
+                    <div class="cta-title">Ready to get started?</div>
+                    <div class="cta-description">
+                        Install annotron and start reviewing your AI-generated artifacts with instant feedback.
+                    </div>
+                    <div class="button-group">
+                        <a href="https://github.com/hueanmy/annotron" class="btn btn-primary" target="_blank">
+                            View on GitHub
+                        </a>
+                        <a href="https://www.youtube.com/@studyingwithmeii" class="btn btn-secondary" target="_blank">
+                            Subscribe on YouTube
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="footer-text">Made for Claude Code agents and human reviewers</div>
+                <div class="links">
+                    <a href="https://github.com/hueanmy/annotron" target="_blank">GitHub</a>
+                    <a href="https://www.youtube.com/@studyingwithmeii" target="_blank">YouTube</a>
+                    <a href="../README.md" target="_blank">Documentation</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

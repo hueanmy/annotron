@@ -1,0 +1,48 @@
+{
+  "id": "GH-71",
+  "title": "",
+  "description": "Two-layer command model: fixed phase shortcuts + /aidlc dispatcher, auto-provision on workflow edit\n\n## Summary\n\nReplace the **one-slash-command-per-(pipeline × phase)** model with a **two-layer command model**:\n\n1. **Shortcut layer** — a fixed set of phase commands (`/plan`, `/design`, …) shared across all pipelines.\n2. **Backbone dispatcher** — a single `/aidlc <epic> [phase]` that resolves the composition at runtime and drives \"next eligible phase\".\n\nBoth layers resolve composition via **`epic → its pipeline → phase`**, never by command name. So two pipelines that reuse the same phase name (with different agent/skill wiring) never share composition — they are disambiguated by which pipeline the epic is bound to.\n\n## Current behavior\n\n`.claude/commands/` after installing `sdlc-parallel-full`:\n\n```\nsdlc-parallel-full-plan.md\nsdlc-parallel-full-design.md\nsdlc-parallel-full-test-plan.md\nsdlc-parallel-full-implement.md\nsdlc-parallel-full-generate-test-cases.md\nsdlc-parallel-full-execute-test.md\n```\n\nId scheme — `pipelineCommandId()` in `packages/core/src/presets/builtinWorkflows.ts`:\n\n```ts\n// `<pipelineId>-<phaseId>` (e.g. `sdlc-parallel-full-plan`). Keying by pipeline\n// keeps commands distinct when multiple pipelines reuse the same phase names.\nexport function pipelineCommandId(pipelineId: string, phaseId: string): string {\n  return `${pipelineId}-${phaseId}`;\n}\n```\n\n`N` phases × `M` pipelines = `N·M` command files, each a full ~10–15 KB composition (persona + phase skill + task). `workspace.yaml` mirrors the same fan-out under `slash_commands:`.\n\n## Why the pipeline prefix is unnecessary\n\nThe phase set is **already canonical and shared** — `PHASES` in `packages/core/src/presets/builtinWorkflows.ts:98`, and the comment states *\"All presets share the same 9-phase shape.\"* What differs per pipeline is only the **wiring** (which agent/skill/model runs a phase), not the phase set. Real pipelines (e.g. `GH-68` in `workspace.yaml`) are subsets/reorderings of the canonical phases, not novel phases.\n\nBecause composition can be resolved at runtime from the epic's pipeline binding, encoding the pipeline into the command **name** is redundant. The `<pipeline>-<phase>` namespacing solves the same-phase-name collision that runtime resolution already solves.\n\n## Proposed design — two layers\n\n### Layer 1 — Shortcut commands (fixed set)\n\nOne command per canonical phase, shared across pipelines, no pipeline prefix:\n\n```\n/plan <epic>\n/design <epic>\n/test-plan <epic>\n/implement <epic>\n/unit-test <epic>          # NEW — split out from implement's ['implement','unit-test'] skills\n/benchmark <epic>          # NEW — performance / benchmark run\n/generate-test-cases <epic>\n/execute-test <epic>\n```\n\n- Count = fixed `N` (number of canonical phases), independent of how many pipelines exist. Adding a pipeline adds **zero** commands.\n- `/design GH-70` resolves `GH-70 → its pipeline → the `design` wiring of that pipeline`. Two pipelines with different `design` wiring both work, no shared composition.\n- Shortcuts are thin aliases into the backbone dispatcher (below).\n\n**Note on `unit-test` / `benchmark`:** these are commonly-run activities that today are folded into `implement` (skills `['implement','unit-test']`) or not modeled at all. Adding them as first-class shortcuts is desired. Open detail: when a phase isn't a distinct step in the epic's pipeline, the shortcut should either run the corresponding skill portion or no-op with a clear message — to be decided.\n\n### Layer 2 — Backbone dispatcher\n\nA single generic command:\n\n```\n/aidlc <epic> [phase]\n```\n\n- **No phase arg** → read the epic run state (`docs/epics/<epic>/state.json`), run the **next eligible phase** (respecting `depends_on` + gates). This is the primary way to drive a pipeline.\n- **Explicit phase** → run that phase, validated against the pipeline DAG. Also the escape hatch for any phase that has no shortcut command.\n- Loads the agent+skill composition at runtime from the pipeline definition instead of pre-writing one file per (pipeline × phase).\n\n### Auto-provision commands on workflow create/edit\n\nWhen the user **creates a new workflow** or **edits an existing one**, scan its steps. For any phase that has **no corresponding command yet** (e.g. a custom phase like `security-review` not in the canonical set), show a popup:\n\n> \"These phases in your workflow don't have a command in AIDLC yet: `security-review`, `data-migration`. Create commands for them so you can run them?\" → **[Create commands]** / [Skip]\n\nOn confirm, generate the shortcut command(s) for those phases so they behave like the built-in ones. This makes the fixed shortcut set **extensible** without hand-editing `.claude/commands/`, and keeps the backbone dispatcher as the always-available fallback for anything not provisioned.\n\n## Benefits\n\n- `N` fixed shortcut commands + 1 backbone, instead of `N·M`.\n- Palette/`/`-menu stays small and stable as pipelines are added.\n- Persona/skill composition resolved once at runtime — no duplicated large files on disk.\n- \"Run next step\" is a first-class default (`/aidlc <epic>`).\n- Custom phases get real commands via the create/edit popup instead of breaking the model.\n\n## Constraints / open questions\n\n- **`epic → pipeline` must be 1-1 at any point in time** — the dispatcher resolves wiring from the epic's bound pipeline, so an epic that could run under multiple pipelines is ambiguous. Needs a rule for recipe/pipeline switching mid-run.\n- Exact behavior of `/unit-test` and `/benchmark` when the epic's pipeline has no such distinct step (run the skill vs. no-op).\n- **Back-compat:** keep generating the per-phase `<pipeline>-<phase>` files behind a flag, or migrate existing workspaces' `slash_commands:` on upgrade?\n- Argument completion for the `[phase]` arg so discoverability isn't lost.\n\n## Touch points\n\n- `pipelineCommandId()` + preset composition — `packages/core/src/presets/builtinWorkflows.ts` (`PHASES` at :98, export at :583).\n- `slash_commands:` generation in the preset/workspace writers.\n- Workflow create/edit wizards (popup + auto-provision) — `packages/extension/src/v2/presetWizards.ts`, `workspaceCommands.ts`, `workspaceWebview.ts`.\n- Run-dispatch (`runWithFeedback` / \"Mark step done\") in `packages/extension/src/v2/workspaceCommands.ts` — send `/aidlc <epic> <phase>` instead of `<slash> <epic>`.\n\n## Scope\n\n- [ ] Fixed shortcut command set for canonical phases (incl. `unit-test`, `benchmark`).\n- [ ] Backbone `/aidlc <epic> [phase]` dispatcher; default to next-eligible phase.\n- [ ] Runtime composition resolution via `epic → pipeline → phase`.\n- [ ] Popup + auto-provision of commands for phases missing one, on workflow create/edit.\n- [ ] Update `slash_commands:` generation and extension run-dispatch.\n- [ ] Back-compat decision for existing per-phase commands.",
+  "pipeline": "GH-71",
+  "agent": null,
+  "agents": [
+    "aidlc-tech-lead",
+    "aidlc-developer",
+    "aidlc-qa"
+  ],
+  "currentStep": 0,
+  "status": "in_progress",
+  "createdAt": "2026-07-16T20:08:47.161Z",
+  "stepStates": [
+    {
+      "agent": "aidlc-tech-lead",
+      "status": "in_progress",
+      "revision": 1,
+      "runStatus": "awaiting_work",
+      "startedAt": "2026-07-16T20:08:47.162Z",
+      "finishedAt": null,
+      "history": [],
+      "artifactsProduced": []
+    },
+    {
+      "agent": "aidlc-developer",
+      "status": "pending",
+      "revision": 1,
+      "runStatus": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "history": [],
+      "artifactsProduced": []
+    },
+    {
+      "agent": "aidlc-qa",
+      "status": "pending",
+      "revision": 1,
+      "runStatus": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "history": [],
+      "artifactsProduced": []
+    }
+  ],
+  "updatedAt": "2026-07-16T20:08:47.162Z"
+}

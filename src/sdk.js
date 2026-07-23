@@ -17,6 +17,11 @@
   let commentPopupEl = null;
   let textContextMenuEl = null;
   let quickCommentBtnEl = null;
+  // Cached .md source + this iframe's file path — used to gate the inline
+  // "Edit" affordance (only offered when a selection maps to a single exact
+  // run in the source) and to compute the edit index sent to the server.
+  let mdSource = null;
+  let artifactFile = null;
 
   // ── CSS path ───────────────────────────────────────────────────────────────
   function cssPath(el) {
@@ -112,7 +117,7 @@
     for (const rect of range.getClientRects()) {
       if (rect.width <= 0 || rect.height <= 0) continue;
       const m = document.createElement('div');
-      m.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:rgba(44,214,199,.28);border-radius:2px;box-shadow:0 0 0 1.5px rgba(26,176,162,.65);pointer-events:none;`;
+      m.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:rgba(39,65,241,.11);border-bottom:1.5px solid rgba(39,65,241,.45);border-radius:2px;pointer-events:none;`;
       overlay.appendChild(m);
     }
   }
@@ -122,7 +127,7 @@
     clearHighlights();
     const r = el.getBoundingClientRect();
     const m = document.createElement('div');
-    m.style.cssText = `position:absolute;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;outline:2px solid #4f8ef7;outline-offset:2px;pointer-events:none;`;
+    m.style.cssText = `position:absolute;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;outline:2px solid #2741F1;outline-offset:2px;border-radius:3px;pointer-events:none;`;
     overlay.appendChild(m);
   }
 
@@ -219,11 +224,15 @@
     };
   }
 
+  // Open the inline "New comment" composer anchored right under the selection.
+  // On submit it hands the note to the chrome, which stores the annotation.
   function openTextCommentCard(selected) {
     if (!selected) return;
+    clearTextContextMenu();
+    clearQuickCommentButton();
     showCard({
-      heading: 'Text: ' + selected.text.slice(0, 50) + (selected.text.length > 50 ? '…' : ''),
-      placeholder: 'What should change about this text?',
+      quote: selected.text,
+      placeholder: 'Add your comment…',
       anchorRect: selected.anchorRect,
       onAdd: note => {
         window.parent.postMessage({
@@ -238,62 +247,161 @@
           textPrefix: selected.textPrefix,
           textSuffix: selected.textSuffix,
         }, '*');
+        try { const s = window.getSelection(); s && s.removeAllRanges(); } catch {}
       },
     });
   }
 
-  function showQuickCommentButton(selected) {
-    clearQuickCommentButton();
+  // One pill button (Comment / Edit) inside the floating selection toolbar.
+  function makeQuickPill(label, svg, title, onActivate) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.setAttribute('data-annotron-ui', 'quick-comment-button');
-    btn.setAttribute('aria-label', 'Add comment to selected text');
-    btn.title = 'Comment on selected text';
-    btn.textContent = '💬';
+    btn.title = title;
+    btn.innerHTML = svg + `<span>${label}</span>`;
     btn.style.cssText = [
-      'position:fixed',
-      'z-index:2147483647',
-      'width:26px',
-      'height:26px',
-      'border:1px solid #2f6fd5',
-      'border-radius:7px 7px 7px 0',
-      'background:#4f8ef7',
-      'color:#fff',
-      'padding:0',
-      'font:14px/1 system-ui,-apple-system,sans-serif',
-      'display:grid',
-      'place-items:center',
-      'cursor:pointer',
-      'box-shadow:0 3px 10px rgba(0,0,0,.35)',
-      'pointer-events:auto',
+      'height:34px', 'padding:0 13px', 'border:none', 'border-radius:9px',
+      'background:#1B1A3D', 'color:#fff',
+      "font:600 12.5px 'Inter',system-ui,-apple-system,sans-serif",
+      'display:inline-flex', 'align-items:center', 'gap:6px', 'cursor:pointer',
+      'box-shadow:0 8px 22px rgba(27,26,61,.34)', 'pointer-events:auto',
     ].join(';');
-
-    const rect = selected.anchorRect;
-    const left = Math.max(8, Math.min(window.innerWidth - 34, rect.right + 6));
-    const top = Math.max(8, Math.min(window.innerHeight - 34, rect.top - 8));
-    btn.style.left = `${left}px`;
-    btn.style.top = `${top}px`;
-
-    const activate = e => {
-      e.preventDefault();
-      e.stopPropagation();
-      ignoreNextClick = true;
-      clearTextContextMenu();
-      clearQuickCommentButton();
-      openTextCommentCard(selected);
-    };
-
-    // Use pointerdown so selectionchange doesn't remove the button before click fires.
+    const activate = e => { e.preventDefault(); e.stopPropagation(); ignoreNextClick = true; onActivate(); };
+    // pointerdown so selectionchange doesn't drop the button before click fires.
     btn.addEventListener('pointerdown', activate);
     btn.addEventListener('click', activate);
-    btn.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        activate(e);
-      }
-    });
+    btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') activate(e); });
+    return btn;
+  }
 
-    document.documentElement.appendChild(btn);
-    quickCommentBtnEl = btn;
+  // Fetch + cache the .md source so the client can decide whether a selection
+  // is safely editable. Called at load; the iframe fully reloads (and re-runs
+  // this SDK) whenever the file changes, so the cache stays fresh.
+  async function initMdSource() {
+    try {
+      artifactFile = new URLSearchParams(location.search).get('file');
+      if (!artifactFile || !/\.md$/i.test(artifactFile)) return; // markdown only
+      const res = await fetch('/source?file=' + encodeURIComponent(artifactFile));
+      if (!res.ok) return;
+      const d = await res.json();
+      mdSource = typeof d.markdown === 'string' ? d.markdown : null;
+    } catch { mdSource = null; }
+  }
+
+  // Locate the selected text in the .md source. Returns a single index when the
+  // selection maps to exactly one run (unique, or disambiguated by the
+  // surrounding rendered context) — otherwise -1, which hides the Edit button.
+  function findEditIndex(selected) {
+    if (!mdSource || !selected || !selected.text) return -1;
+    const t = selected.text;
+    const idxs = [];
+    for (let i = mdSource.indexOf(t); i !== -1 && idxs.length <= 50; i = mdSource.indexOf(t, i + 1)) idxs.push(i);
+    if (idxs.length === 0) return -1;
+    if (idxs.length === 1) return idxs[0];
+    // Multiple matches: disambiguate with the rendered prefix/suffix context.
+    const pre = (selected.textPrefix || '').trim().slice(-12);
+    const suf = (selected.textSuffix || '').trim().slice(0, 12);
+    if (!pre && !suf) return -1;
+    const hits = idxs.filter(idx => {
+      const before = mdSource.slice(Math.max(0, idx - 80), idx);
+      const after = mdSource.slice(idx + t.length, idx + t.length + 80);
+      return (!pre || before.includes(pre)) && (!suf || after.includes(suf));
+    });
+    return hits.length === 1 ? hits[0] : -1;
+  }
+
+  // Inline edit card: an input pre-filled with the selected text, anchored at
+  // the selection. Save writes the new text (or Delete = empty) straight to the
+  // .md via the chrome → /edit-text. No agent.
+  function openTextEditCard(selected, index) {
+    clearCard();
+    cardEl = document.createElement('div');
+    cardEl.setAttribute('data-annotron-ui', 'card');
+    cardEl.style.cssText = CARD_STYLE;
+
+    const hdg = document.createElement('div');
+    hdg.style.cssText = `display:flex;align-items:center;gap:6px;font:600 11px ${FONT};letter-spacing:.09em;text-transform:uppercase;color:#2741F1;margin-bottom:9px;`;
+    hdg.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Edit text</span>';
+
+    const ta = document.createElement('textarea');
+    ta.value = selected.text;
+    ta.style.cssText = `width:100%;min-height:66px;resize:vertical;border-radius:10px;border:1px solid rgba(27,26,61,.14);background:#fff;color:#1B1A3D;padding:10px 11px;font:400 13.5px/1.5 ${FONT};box-sizing:border-box;outline:none;`;
+    ta.addEventListener('focus', () => { ta.style.borderColor = '#2741F1'; ta.style.boxShadow = '0 0 0 3px rgba(39,65,241,.12)'; });
+    ta.addEventListener('blur', () => { ta.style.borderColor = 'rgba(27,26,61,.14)'; ta.style.boxShadow = 'none'; });
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:10px;';
+    const btnDelete = document.createElement('button');
+    btnDelete.textContent = 'Delete';
+    btnDelete.style.cssText = `height:32px;padding:0 13px;border-radius:8px;border:1px solid rgba(216,134,137,.5);background:#fff;color:#b4484c;font:600 12.5px ${FONT};cursor:pointer;margin-right:auto;`;
+    const btnCancel = document.createElement('button');
+    btnCancel.textContent = 'Cancel';
+    btnCancel.style.cssText = `height:32px;padding:0 13px;border-radius:8px;border:1px solid rgba(27,26,61,.14);background:#fff;color:rgba(27,26,61,.7);font:600 12.5px ${FONT};cursor:pointer;`;
+    const btnSave = document.createElement('button');
+    btnSave.textContent = 'Save';
+    btnSave.style.cssText = `height:32px;padding:0 15px;border-radius:8px;border:none;background:#2741F1;color:#fff;font:600 12.5px ${FONT};cursor:pointer;`;
+    row.append(btnDelete, btnCancel, btnSave);
+
+    cardEl.append(hdg, ta, row);
+    document.documentElement.appendChild(cardEl);
+    positionCard(selected.anchorRect);
+
+    const apply = (newText) => {
+      window.parent.postMessage({
+        [TAG]: true, type: 'text-edit',
+        file: artifactFile, oldText: selected.text, newText, index,
+      }, '*');
+      // Optimistically patch the local cache so a follow-up edit stays aligned
+      // (the iframe also reloads once the .md write lands, re-seeding it).
+      if (mdSource != null && index >= 0) {
+        mdSource = mdSource.slice(0, index) + newText + mdSource.slice(index + selected.text.length);
+      }
+      try { const s = window.getSelection(); s && s.removeAllRanges(); } catch {}
+      dismissCard();
+    };
+
+    btnCancel.addEventListener('click', e => { e.stopPropagation(); dismissCard(); });
+    btnSave.addEventListener('click', e => { e.stopPropagation(); apply(ta.value); });
+    btnDelete.addEventListener('click', e => { e.stopPropagation(); apply(''); });
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.stopPropagation(); dismissCard(); }
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); apply(ta.value); }
+    });
+    setTimeout(() => { ta.focus(); ta.select(); }, 0);
+  }
+
+  function showQuickCommentButton(selected) {
+    clearQuickCommentButton();
+    const COMMENT_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    const EDIT_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-annotron-ui', 'quick-comment-button');
+    wrap.style.cssText = 'position:fixed;z-index:2147483647;display:inline-flex;gap:6px;pointer-events:auto;';
+
+    wrap.appendChild(makeQuickPill('Comment', COMMENT_SVG, 'Comment on selected text', () => {
+      clearTextContextMenu(); clearQuickCommentButton(); openTextCommentCard(selected);
+    }));
+
+    // "Edit" — direct .md edit. Shown ONLY when the selection maps to a single
+    // exact run in the Markdown source, so we never offer an edit we can't
+    // safely apply (no error message — the button just isn't there).
+    const editIndex = findEditIndex(selected);
+    if (editIndex >= 0) {
+      wrap.appendChild(makeQuickPill('Edit', EDIT_SVG, 'Edit selected text directly', () => {
+        clearTextContextMenu(); clearQuickCommentButton(); openTextEditCard(selected, editIndex);
+      }));
+    }
+
+    const rect = selected.anchorRect;
+    const width = editIndex >= 0 ? 168 : 96;
+    const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left + rect.width / 2 - width / 2));
+    const top = Math.max(8, Math.min(window.innerHeight - 42, rect.top - 42));
+    wrap.style.left = `${left}px`;
+    wrap.style.top = `${top}px`;
+
+    document.documentElement.appendChild(wrap);
+    quickCommentBtnEl = wrap;
   }
 
   function showTextContextMenu(x, y, onComment) {
@@ -304,33 +412,36 @@
     menu.style.cssText = [
       'position:fixed',
       'z-index:2147483647',
-      'min-width:140px',
-      'background:#25262b',
-      'color:#c9cdd4',
-      'border:1px solid #4f8ef7',
-      'border-radius:8px',
-      'padding:6px',
-      'box-shadow:0 12px 36px rgba(0,0,0,.45)',
+      'min-width:168px',
+      'background:#fff',
+      'color:#1B1A3D',
+      'border:1px solid rgba(27,26,61,.1)',
+      'border-radius:12px',
+      'padding:5px',
+      'box-shadow:0 12px 34px rgba(27,26,61,.2)',
       'pointer-events:auto',
     ].join(';');
 
     const item = document.createElement('button');
     item.type = 'button';
-    item.textContent = 'Comment';
+    item.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2741F1" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Comment</span>';
     item.setAttribute('role', 'menuitem');
     item.style.cssText = [
+      'display:flex',
+      'align-items:center',
+      'gap:9px',
       'width:100%',
       'text-align:left',
       'border:0',
-      'border-radius:6px',
-      'padding:6px 10px',
-      'background:#25262b',
-      'color:#c9cdd4',
+      'border-radius:8px',
+      'padding:8px 12px',
+      'background:#fff',
+      'color:#1B1A3D',
       'cursor:pointer',
-      'font:600 12px system-ui,-apple-system,sans-serif',
+      "font:500 13px 'Inter',system-ui,-apple-system,sans-serif",
     ].join(';');
-    item.addEventListener('mouseenter', () => { item.style.background = '#373a40'; });
-    item.addEventListener('mouseleave', () => { item.style.background = '#25262b'; });
+    item.addEventListener('mouseenter', () => { item.style.background = '#F3F3F8'; });
+    item.addEventListener('mouseleave', () => { item.style.background = '#fff'; });
     item.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -364,53 +475,108 @@
     return lastThread || annotation.note || annotation.text || '';
   }
 
+  // ── Hover preview popup (shows a comment's content on highlight hover) ──────
+  let hoverPopupEl = null;
+  let hoverHideTimer = null;
+  const HOVER_FONT = "'Inter',system-ui,-apple-system,sans-serif";
+
+  function clearHoverPopup() {
+    clearTimeout(hoverHideTimer);
+    if (hoverPopupEl) { hoverPopupEl.remove(); hoverPopupEl = null; }
+  }
+
+  function showHoverPopup(annotation, rect) {
+    clearTimeout(hoverHideTimer);
+    clearHoverPopup();
+    const msg = latestMessage(annotation);
+    if (!msg) return;
+    const resolved = annotation.status === 'resolved';
+    const accent = resolved ? '#1c8a4e' : '#2741F1';
+    const pop = document.createElement('div');
+    pop.setAttribute('data-annotron-ui', 'hover-popup');
+    pop.style.cssText = [
+      'position:fixed', 'z-index:2147483647', 'pointer-events:none',
+      'width:max-content', 'max-width:300px',
+      'background:#fff', 'color:#1B1A3D',
+      'border:1px solid rgba(27,26,61,.1)', 'border-radius:12px',
+      'padding:10px 12px', 'box-shadow:0 10px 30px rgba(27,26,61,.18)',
+      `font:12px/1.5 ${HOVER_FONT}`, 'animation:none',
+    ].join(';');
+
+    const title = document.createElement('div');
+    title.style.cssText = `display:flex;align-items:center;gap:5px;font:600 10px ${HOVER_FONT};letter-spacing:.09em;text-transform:uppercase;color:${accent};margin-bottom:5px;`;
+    title.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>${resolved ? 'Resolved' : (annotation.kind === 'text' ? 'Text comment' : 'Element comment')}</span>`;
+
+    const body = document.createElement('div');
+    body.style.cssText = 'color:rgba(27,26,61,.82);white-space:pre-wrap;word-break:break-word;';
+    body.textContent = makeSnippet(msg, 240);
+
+    const foot = document.createElement('div');
+    const replies = annotation.thread?.length || 0;
+    foot.style.cssText = `margin-top:6px;font:500 11px ${HOVER_FONT};color:rgba(27,26,61,.45);`;
+    foot.textContent = replies > 1 ? `${replies} messages · click to open` : 'Click to open';
+
+    pop.append(title, body, foot);
+    document.documentElement.appendChild(pop);
+
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const b = pop.getBoundingClientRect();
+    let left = Math.min(vw - b.width - 10, Math.max(10, rect.left));
+    let top = rect.bottom + 8;
+    if (top + b.height > vh - 10) top = Math.max(10, rect.top - b.height - 8);
+    pop.style.left = `${left}px`;
+    pop.style.top = `${top}px`;
+    hoverPopupEl = pop;
+  }
+
   function showCommentPopup(annotation, anchorRect) {
     clearCommentPopup();
     const popup = document.createElement('div');
     popup.setAttribute('data-annotron-ui', 'comment-popup');
     popup.setAttribute('role', 'dialog');
     popup.setAttribute('aria-label', 'Annotation comment');
+    const resolved = annotation.status === 'resolved';
     popup.style.cssText = [
       'position:fixed',
       'z-index:2147483647',
       'width:min(320px,calc(100vw - 24px))',
-      'background:#25262b',
-      'color:#c9cdd4',
-      'border:1px solid #4f8ef7',
-      'border-radius:8px',
-      'padding:10px 12px',
-      'box-shadow:0 12px 36px rgba(0,0,0,.45)',
-      'font:12px/1.4 system-ui,-apple-system,sans-serif',
+      'background:#fff',
+      'color:#1B1A3D',
+      'border:1px solid rgba(27,26,61,.1)',
+      'border-radius:14px',
+      'padding:13px',
+      'box-shadow:0 12px 34px rgba(27,26,61,.2)',
+      "font:12px/1.45 'Inter',system-ui,-apple-system,sans-serif",
       'display:flex',
       'flex-direction:column',
-      'gap:8px',
+      'gap:9px',
       'pointer-events:auto',
     ].join(';');
 
     const title = document.createElement('div');
-    title.style.cssText = 'font-size:11px;font-weight:700;color:#8f97a6;text-transform:uppercase;letter-spacing:.45px;';
-    title.textContent = annotation.kind === 'text' ? 'Text Comment' : 'Element Comment';
+    title.style.cssText = `font-size:11px;font-weight:600;color:${resolved ? '#1c8a4e' : '#2741F1'};text-transform:uppercase;letter-spacing:.09em;`;
+    title.textContent = resolved ? 'Resolved' : (annotation.kind === 'text' ? 'Text comment' : 'Element comment');
 
     const label = document.createElement('div');
-    label.style.cssText = 'font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    label.style.cssText = 'font-size:12px;font-weight:600;color:#1B1A3D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
     label.textContent = annotation.label || '(annotation)';
 
     const body = document.createElement('div');
-    body.style.cssText = 'font-size:12px;color:#d7dbe2;white-space:pre-wrap;word-break:break-word;';
+    body.style.cssText = 'font-size:13px;color:rgba(27,26,61,.82);white-space:pre-wrap;word-break:break-word;';
     body.textContent = makeSnippet(latestMessage(annotation));
 
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;justify-content:flex-end;gap:6px;';
+    row.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;';
 
     const close = document.createElement('button');
     close.type = 'button';
     close.textContent = 'Close';
-    close.style.cssText = 'border:0;border-radius:6px;padding:5px 10px;background:#373a40;color:#c9cdd4;cursor:pointer;font:600 11px system-ui,-apple-system,sans-serif;';
+    close.style.cssText = "border:1px solid rgba(27,26,61,.14);border-radius:8px;padding:6px 12px;background:#fff;color:rgba(27,26,61,.7);cursor:pointer;font:600 11.5px 'Inter',system-ui,sans-serif;";
 
     const open = document.createElement('button');
     open.type = 'button';
     open.textContent = 'Open thread';
-    open.style.cssText = 'border:0;border-radius:6px;padding:5px 10px;background:#4f8ef7;color:#fff;cursor:pointer;font:600 11px system-ui,-apple-system,sans-serif;';
+    open.style.cssText = "border:0;border-radius:8px;padding:6px 13px;background:#2741F1;color:#fff;cursor:pointer;font:600 11.5px 'Inter',system-ui,sans-serif;";
 
     close.addEventListener('click', () => clearCommentPopup());
     open.addEventListener('click', () => {
@@ -448,18 +614,20 @@
     button.setAttribute('aria-label', `Open comment for ${annotation.label || annotation.text || annotation.kind}`);
     button.title = annotation.thread?.at(-1)?.message || annotation.note || 'Open comment';
     const selected = annotation.id === selectedAnnotationId;
-    button.textContent = '◆';
+    const resolved = annotation.status === 'resolved';
+    const bg = resolved ? '#2fbf71' : (selected ? '#1B1A3D' : '#2741F1');
+    button.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
     button.style.cssText = [
       'position:absolute',
-      `left:${Math.max(2, Math.min(window.innerWidth - 24, rect.right - 9))}px`,
-      `top:${Math.max(2, rect.top - 9)}px`,
+      `left:${Math.max(2, Math.min(window.innerWidth - 24, rect.right - 10))}px`,
+      `top:${Math.max(2, rect.top - 10)}px`,
       'width:22px', 'height:22px', 'padding:0',
       'display:grid', 'place-items:center',
-      'border-radius:6px 6px 6px 0',
-      `border:1px solid ${selected ? '#fff' : '#2f6fd5'}`,
-      `background:${selected ? '#245ec1' : '#4f8ef7'}`,
-      'color:#fff', 'font:9px/1 system-ui,sans-serif',
-      'box-shadow:0 2px 6px rgba(0,0,0,.3)',
+      'border-radius:8px 8px 8px 2px',
+      'border:none',
+      `background:${bg}`,
+      'color:#fff',
+      'box-shadow:0 3px 10px rgba(27,26,61,.32)',
       'cursor:pointer', 'pointer-events:auto',
     ].join(';');
     button.addEventListener('click', e => {
@@ -477,6 +645,7 @@
     const overlay = ensureAnnotationsOverlay();
     overlay.innerHTML = '';
     clearCommentPopup();
+    clearHoverPopup();
     for (const annotation of annotations) {
       if (!annotation.selector) continue;
       let target;
@@ -492,15 +661,39 @@
         if (rect.width > 0 && rect.height > 0) rects = [rect];
       }
       if (!rects.length) continue;
-      for (const rect of rects) {
+      const selected = annotation.id === selectedAnnotationId;
+      const resolved = annotation.status === 'resolved';
+      // Subtle, design-matched palette: faint tint + a thin underline for text,
+      // a soft outline for elements. Selected only deepens slightly.
+      const tint = resolved ? '.13' : (selected ? '.18' : '.11');
+      const line = resolved ? '.4' : (selected ? '.7' : '.45');
+      const rgb = resolved ? '47,191,113' : '39,65,241';
+      const fill = `rgba(${rgb},${tint})`;
+      const underline = `rgba(${rgb},${line})`;
+      rects.forEach((rect, i) => {
         const mark = document.createElement('div');
-        const selected = annotation.id === selectedAnnotationId;
+        mark.setAttribute('data-annotron-ui', 'annotation-mark');
         mark.style.cssText = annotation.kind === 'text'
-          ? `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:${selected ? 'rgba(77,143,255,.35)' : 'rgba(255,202,40,.34)'};border-bottom:2px solid ${selected ? 'rgba(43,106,214,.92)' : 'rgba(224,151,0,.85)'};border-radius:2px;`
-          : `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;outline:${selected ? 3 : 2}px solid rgba(79,142,247,${selected ? '.95' : '.6'});outline-offset:2px;border-radius:2px;`;
+          ? `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:${fill};border-bottom:1.5px solid ${underline};border-radius:2px;cursor:pointer;pointer-events:auto;transition:background .12s;`
+          : `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;outline:1.5px solid ${underline};outline-offset:2px;border-radius:3px;background:${fill};cursor:pointer;pointer-events:auto;transition:background .12s;`;
+        mark.addEventListener('mouseenter', () => {
+          mark.style.background = `rgba(${rgb},.2)`;
+          showHoverPopup(annotation, mark.getBoundingClientRect());
+        });
+        mark.addEventListener('mouseleave', () => {
+          mark.style.background = fill;
+          hoverHideTimer = setTimeout(clearHoverPopup, 120);
+        });
+        mark.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          clearHoverPopup();
+          selectedAnnotationId = annotation.id;
+          renderAnnotationsOverlay();
+          window.parent.postMessage({ [TAG]: true, type: 'annotation-selected', id: annotation.id }, '*');
+        });
         overlay.appendChild(mark);
-      }
-      addAnnotationButton(overlay, annotation, rects.at(-1));
+      });
     }
   }
 
@@ -514,21 +707,22 @@
   document.addEventListener('scroll', scheduleAnnotationsRender, true);
   document.addEventListener('load', scheduleAnnotationsRender, true);
 
-  // ── Card ──────────────────────────────────────────────────────────────────
+  // ── Inline composer card ────────────────────────────────────────────────
+  const FONT = "'Inter',system-ui,-apple-system,sans-serif";
   const CARD_STYLE = [
     'position:fixed',
     'z-index:2147483646',
-    'width:min(300px,calc(100vw - 24px))',
-    'padding:14px',
-    'border-radius:10px',
-    'background:#25262b',
-    'color:#c9cdd4',
-    'border:1px solid #4f8ef7',
-    'box-shadow:0 16px 56px rgba(0,0,0,.5)',
-    'font:13px/1.4 system-ui,-apple-system,sans-serif',
+    'width:min(340px,calc(100vw - 24px))',
+    'padding:13px',
+    'border-radius:14px',
+    'background:#fff',
+    'color:#1B1A3D',
+    'border:1px solid rgba(39,65,241,.3)',
+    'box-shadow:0 6px 20px rgba(27,26,61,.16)',
+    `font:13px/1.45 ${FONT}`,
     'display:flex',
     'flex-direction:column',
-    'gap:8px',
+    'gap:0',
   ].join(';');
 
   function clearCard() {
@@ -551,9 +745,10 @@
 
   function positionCard(anchorRect) {
     const vw = window.innerWidth, vh = window.innerHeight;
-    let left = Math.max(12, Math.min(anchorRect.left, vw - 316));
+    const cw = cardEl.offsetWidth || 340, ch = cardEl.offsetHeight || 200;
+    let left = Math.max(12, Math.min(anchorRect.left, vw - cw - 12));
     let top = anchorRect.bottom + 10;
-    if (top + 200 > vh) top = Math.max(12, anchorRect.top - 210);
+    if (top + ch > vh - 12) top = Math.max(12, anchorRect.top - ch - 10);
     cardEl.style.left = left + 'px';
     cardEl.style.top = top + 'px';
   }
@@ -565,36 +760,48 @@
     return e;
   }
 
-  function showCard({ heading, placeholder, anchorRect, onAdd }) {
+  function showCard({ quote, placeholder, anchorRect, onAdd }) {
     clearCard();
 
     cardEl = document.createElement('div');
     cardEl.setAttribute('data-annotron-ui', 'card');
     cardEl.style.cssText = CARD_STYLE;
 
-    const hdg = el('div',
-      'font-size:11px;font-weight:700;color:#6c7280;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;',
-      heading);
+    const hdg = document.createElement('div');
+    hdg.style.cssText = `display:flex;align-items:center;gap:6px;font:600 11px ${FONT};letter-spacing:.09em;text-transform:uppercase;color:#2741F1;margin-bottom:9px;`;
+    hdg.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>New comment</span>';
+
+    let quoteEl = null;
+    if (quote) {
+      quoteEl = document.createElement('div');
+      quoteEl.style.cssText = `border-left:3px solid #D88689;padding:2px 0 2px 10px;font:italic 400 12.5px/1.5 ${FONT};color:rgba(27,26,61,.6);margin-bottom:11px;max-height:66px;overflow:hidden;`;
+      quoteEl.textContent = '"' + quote + '"';
+    }
 
     const ta = document.createElement('textarea');
-    ta.placeholder = placeholder;
-    ta.style.cssText = 'width:100%;min-height:68px;resize:vertical;border-radius:6px;border:1px solid #373a40;background:#1e1f23;color:#c9cdd4;padding:7px 8px;font:13px/1.4 system-ui,-apple-system,sans-serif;box-sizing:border-box;outline:none;';
-    ta.addEventListener('focus', () => { ta.style.borderColor = '#4f8ef7'; });
-    ta.addEventListener('blur', () => { ta.style.borderColor = '#373a40'; });
+    ta.placeholder = placeholder || 'Add your comment…';
+    ta.style.cssText = `width:100%;min-height:66px;resize:vertical;border-radius:10px;border:1px solid rgba(27,26,61,.14);background:#fff;color:#1B1A3D;padding:10px 11px;font:400 13.5px/1.5 ${FONT};box-sizing:border-box;outline:none;`;
+    ta.addEventListener('focus', () => { ta.style.borderColor = '#2741F1'; ta.style.boxShadow = '0 0 0 3px rgba(39,65,241,.12)'; });
+    ta.addEventListener('blur', () => { ta.style.borderColor = 'rgba(27,26,61,.14)'; ta.style.boxShadow = 'none'; });
 
-    const hint = el('div', 'font-size:11px;color:#4a4e5a;', 'Enter — add · Esc — cancel');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:10px;';
 
-    const row = el('div', 'display:flex;gap:6px;justify-content:flex-end;');
-
-    const btnCancel = el('button', 'border:0;border-radius:6px;padding:6px 12px;font:600 12px system-ui;cursor:pointer;background:#373a40;color:#c9cdd4;', 'Cancel');
-    const btnAdd = el('button', 'border:0;border-radius:6px;padding:6px 12px;font:600 12px system-ui;cursor:pointer;background:#4f8ef7;color:#fff;', 'Add annotation');
+    const btnCancel = document.createElement('button');
+    btnCancel.textContent = 'Cancel';
+    btnCancel.style.cssText = `height:32px;padding:0 13px;border-radius:8px;border:1px solid rgba(27,26,61,.14);background:#fff;color:rgba(27,26,61,.7);font:600 12.5px ${FONT};cursor:pointer;`;
+    const btnAdd = document.createElement('button');
+    btnAdd.textContent = 'Comment';
+    btnAdd.style.cssText = `height:32px;padding:0 15px;border-radius:8px;border:none;background:#2741F1;color:#fff;font:600 12.5px ${FONT};cursor:pointer;`;
 
     row.append(btnCancel, btnAdd);
-    cardEl.append(hdg, ta, hint, row);
+    cardEl.append(hdg);
+    if (quoteEl) cardEl.append(quoteEl);
+    cardEl.append(ta, row);
     document.documentElement.appendChild(cardEl);
     positionCard(anchorRect);
 
-    const submit = () => { onAdd(ta.value.trim()); dismissCard(); };
+    const submit = () => { const v = ta.value.trim(); if (!v) { ta.focus(); return; } onAdd(v); dismissCard(); };
 
     btnCancel.addEventListener('click', e => { e.stopPropagation(); dismissCard(); });
     btnAdd.addEventListener('click', e => { e.stopPropagation(); submit(); });
@@ -610,7 +817,7 @@
     if (!annotating || isInteractive(e.target) || isAnnotronEl(e.target)) return;
     if (hovered) { hovered.style.outline = ''; hovered.style.outlineOffset = ''; hovered.style.cursor = ''; }
     hovered = e.target;
-    hovered.style.outline = '2px solid #4f8ef7';
+    hovered.style.outline = '2px solid #2741F1';
     hovered.style.outlineOffset = '2px';
     hovered.style.cursor = 'crosshair';
   }, true);
@@ -721,9 +928,11 @@
     dismissCard();
     clearQuickCommentButton();
     highlightTextRange(clonedRange);
-    sel.removeAllRanges();
-
-    openTextCommentCard({ selector, text, label, anchorRect, textStart, textEnd, textPrefix, textSuffix });
+    // Show the Comment + (conditional) Edit toolbar instead of jumping straight
+    // into the comment composer, so a plain-text selection can be edited in
+    // place. Keep the native selection alive (don't removeAllRanges) so the
+    // pill survives the trailing click handler — matching the non-annotate path.
+    showQuickCommentButton({ selector, text, label, anchorRect, textStart, textEnd, textPrefix, textSuffix });
   }, true);
 
   // ── Element click ──────────────────────────────────────────────────────────
@@ -740,17 +949,16 @@
     const selector = cssPath(el);
     const label = labelFor(el);
     const anchorRect = el.getBoundingClientRect();
+    const quote = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120);
 
-    console.log('[annotron-sdk] showing card at', anchorRect.left, anchorRect.bottom);
     dismissCard();
     highlightElement(el);
     showCard({
-      heading: 'Element: ' + label,
+      quote,
       placeholder: 'What should change about this element?',
       anchorRect,
       onAdd: note => {
         window.parent.postMessage({ [TAG]: true, type: 'element-selected', selector, label, note }, '*');
-        dismissCard();
       },
     });
   }, true);
@@ -814,5 +1022,21 @@
     }
   });
 
-  window.parent.postMessage({ [TAG]: true, type: 'sdk-ready' }, '*');
+  // Extract headings for outline
+  function extractHeadings() {
+    const headingsData = document.querySelector('meta[name="headings-data"]');
+    if (headingsData && headingsData.content) {
+      try {
+        return JSON.parse(headingsData.content);
+      } catch (e) {
+        console.error('[annotron-sdk] failed to parse headings:', e);
+      }
+    }
+    return [];
+  }
+
+  const headings = extractHeadings();
+  window.parent.postMessage({ [TAG]: true, type: 'sdk-ready', headings }, '*');
+  // Load the .md source so the inline "Edit" affordance can gate itself.
+  initMdSource();
 })();

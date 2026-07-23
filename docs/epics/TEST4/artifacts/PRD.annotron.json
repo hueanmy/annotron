@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "annotations": [
+    {
+      "id": "ann_l5qmhky",
+      "kind": "text",
+      "selector": "body > p:nth-of-type(1)",
+      "label": "\"Product\"",
+      "text": "Product",
+      "textStart": 26,
+      "textEnd": 33,
+      "textPrefix": "ic ID: $EPIC_ID\nAuthor: ",
+      "textSuffix": " Owner\nStatus: Draft\nCre",
+      "thread": [
+        {
+          "role": "human",
+          "message": "dfsdfsdf",
+          "timestamp": "2026-07-18T03:43:10.337Z"
+        }
+      ],
+      "createdAt": "2026-07-18T03:43:10.337Z",
+      "status": "open"
+    },
+    {
+      "id": "ann_7qxk79g",
+      "kind": "text",
+      "selector": "#\\31 -problem-statement",
+      "label": "\"Statement\"",
+      "text": "Statement",
+      "textStart": 11,
+      "textEnd": 20,
+      "textPrefix": "1. Problem ",
+      "textSuffix": null,
+      "thread": [
+        {
+          "role": "human",
+          "message": "sdfsdf",
+          "timestamp": "2026-07-18T03:43:10.337Z"
+        }
+      ],
+      "createdAt": "2026-07-18T03:43:10.337Z",
+      "status": "open"
+    },
+    {
+      "id": "ann_mywyq7b",
+      "kind": "text",
+      "selector": "body",
+      "label": "\"4. Affected Areas\"",
+      "text": "4. Affected Areas",
+      "textStart": 350,
+      "textEnd": 367,
+      "textPrefix": " …\nWill not address: …\n\n",
+      "textSuffix": "\n\nExisting product surfa",
+      "thread": [
+        {
+          "role": "human",
+          "message": "sdfsdf",
+          "timestamp": "2026-07-18T03:43:10.337Z"
+        }
+      ],
+      "createdAt": "2026-07-18T03:43:10.337Z",
+      "status": "open"
+    },
+    {
+      "id": "ann_k9j8s91",
+      "kind": "text",
+      "selector": "body > div:nth-of-type(3) > table > thead > tr > th:nth-of-type(2)",
+      "label": "\"I want to…\"",
+      "text": "I want to…",
+      "textStart": 0,
+      "textEnd": 10,
+      "textPrefix": null,
+      "textSuffix": null,
+      "thread": [
+        {
+          "role": "human",
+          "message": "sdfsdf",
+          "timestamp": "2026-07-18T03:43:10.337Z"
+        }
+      ],
+      "createdAt": "2026-07-18T03:43:10.337Z",
+      "status": "open"
+    },
+    {
+      "id": "ann_vhpnkc3",
+      "kind": "text",
+      "selector": "body",
+      "label": "\"FR-02: [Feature name]\"",
+      "text": "FR-02: [Feature name]",
+      "textStart": 863,
+      "textEnd": 884,
+      "textPrefix": ":\n\n AC-01: …\n AC-02: …\n\n",
+      "textSuffix": "\nDescription: …\nAcceptan",
+      "thread": [
+        {
+          "role": "human",
+          "message": "sdfsdf",
+          "timestamp": "2026-07-18T03:43:10.337Z"
+        }
+      ],
+      "createdAt": "2026-07-18T03:43:10.337Z",
+      "status": "open"
+    },
+    {
+      "id": "ann_2zcusq3",
+      "kind": "text",
+      "selector": "body",
+      "label": "\"7. Non-Functional Requirements\"",
+      "text": "7. Non-Functional Requirements",
+      "textStart": 933,
+      "textEnd": 963,
+      "textPrefix": "e Criteria:\n\n AC-01: …\n\n",
+      "textSuffix": "\n\n\n\nCategory\nRequirement",
+      "thread": [
+        {
+          "role": "human",
+          "message": "dfsdfsfd",
+          "timestamp": "2026-07-18T03:43:10.337Z"
+        }
+      ],
+      "createdAt": "2026-07-18T03:43:10.337Z",
+      "status": "open"
+    }
+  ],
+  "rounds": []
+}

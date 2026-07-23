@@ -1,0 +1,17 @@
+{
+  "core-business": "docs/core",
+  "extra_projects": [
+    {
+      "type": "local",
+      "ref": "/Users/meii/Documents/contribute-prj",
+      "label": "contribute-prj",
+      "mode": "workspace"
+    },
+    {
+      "type": "github",
+      "ref": "creative-force-io/lighthousechroma",
+      "label": "lighthousechroma",
+      "mode": "reference"
+    }
+  ]
+}

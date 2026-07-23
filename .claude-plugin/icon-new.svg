@@ -1,0 +1,23 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="60" fill="#4F46E5"/>
+
+  <!-- White circle loop (feedback loop symbol) -->
+  <g transform="translate(256, 140)">
+    <!-- Outer circle -->
+    <circle cx="0" cy="0" r="50" fill="none" stroke="white" stroke-width="12" stroke-linecap="round"/>
+
+    <!-- Small dot (connection point) -->
+    <circle cx="0" cy="-50" r="8" fill="white"/>
+  </g>
+
+  <!-- Text: annotron -->
+  <text x="256" y="280" font-family="Arial, sans-serif" font-size="56" font-weight="bold" text-anchor="middle" fill="white">
+    annotron
+  </text>
+
+  <!-- Text: AI REVIEW IN THE LOOP -->
+  <text x="256" y="330" font-family="Arial, sans-serif" font-size="22" font-weight="600" text-anchor="middle" fill="white" letter-spacing="2">
+    AI REVIEW IN THE LOOP
+  </text>
+</svg>
