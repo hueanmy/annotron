@@ -88,14 +88,7 @@ async function openFile(uri) {
     await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Window, title: 'annotron: opening…' },
       async () => {
-        await ensureServer(port);
-        const r = await postJSON(port, '/session', { file });
-        if (r.status !== 200) {
-          let msg = 'could not register the file';
-          try { msg = JSON.parse(r.body).error || msg; } catch (_) {}
-          throw new Error(msg);
-        }
-        const url = `http://127.0.0.1:${port}/?file=${encodeURIComponent(file)}`;
+        const url = await openSession(file, port);
         if (openIn === 'vscode') {
           await vscode.commands.executeCommand('simpleBrowser.show', url);
         } else {
@@ -113,6 +106,62 @@ async function openFile(uri) {
   }
 }
 
+// Ensure the server is up and the file is registered as a session; return the
+// review URL. Shared by the "Open in annotron" command and the custom editor.
+async function openSession(file, port) {
+  await ensureServer(port);
+  const r = await postJSON(port, '/session', { file });
+  if (r.status !== 200) {
+    let msg = 'could not register the file';
+    try { msg = JSON.parse(r.body).error || msg; } catch (_) {}
+    throw new Error(msg);
+  }
+  return `http://127.0.0.1:${port}/?file=${encodeURIComponent(file)}`;
+}
+
+function webviewHtml(frameUri) {
+  const src = String(frameUri);
+  return `<!doctype html><html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src http://127.0.0.1:* http://localhost:* https:; style-src 'unsafe-inline';">
+<style>html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#1B1A3D}iframe{border:0;width:100%;height:100vh;display:block}</style>
+</head><body><iframe src="${src}" allow="clipboard-read; clipboard-write"></iframe></body></html>`;
+}
+
+function messageHtml(text) {
+  return `<!doctype html><html><head><meta charset="utf-8">
+<style>body{margin:0;font-family:system-ui,sans-serif;color:#ccc;background:#1B1A3D;display:flex;align-items:center;justify-content:center;height:100vh}div{max-width:32rem;padding:1.5rem;line-height:1.5}</style>
+</head><body><div>${text}</div></body></html>`;
+}
+
+// Custom editor so annotron shows up in VS Code's native "Open With…" picker.
+// It renders the same browser review UI inside a webview tab (an iframe onto the
+// bundled server) instead of an external browser.
+class AnnotronEditorProvider {
+  async openCustomDocument(uri) { return { uri, dispose() {} }; }
+
+  async resolveCustomEditor(document, webviewPanel) {
+    const file = document.uri.fsPath;
+    webviewPanel.webview.options = { enableScripts: true };
+    if (document.uri.scheme !== 'file' || !/\.(md|markdown|html?)$/i.test(file)) {
+      webviewPanel.webview.html = messageHtml('annotron supports local .md and .html files.');
+      return;
+    }
+    webviewPanel.webview.html = messageHtml('annotron: opening…');
+    const cfg = vscode.workspace.getConfiguration('annotron');
+    const port = cfg.get('port', 7321);
+    try {
+      const url = await openSession(file, port);
+      const frameUri = await vscode.env.asExternalUri(vscode.Uri.parse(url));
+      webviewPanel.webview.html = webviewHtml(frameUri);
+      if (cfg.get('autoAgent', true)) {
+        try { startAgent(file, port); } catch (_) {}
+      }
+    } catch (e) {
+      webviewPanel.webview.html = messageHtml('annotron: ' + (e && e.message ? e.message : String(e)));
+    }
+  }
+}
+
 async function stopServer() {
   const port = vscode.workspace.getConfiguration('annotron').get('port', 7321);
   try { await postJSON(port, '/stop', {}); vscode.window.showInformationMessage('annotron server stopped.'); }
@@ -123,6 +172,12 @@ function activate(ctx) {
   context = ctx;
   ctx.subscriptions.push(vscode.commands.registerCommand('annotron.open', openFile));
   ctx.subscriptions.push(vscode.commands.registerCommand('annotron.stop', stopServer));
+  // Register the custom editor so annotron appears in the "Open With…" picker.
+  ctx.subscriptions.push(vscode.window.registerCustomEditorProvider(
+    'annotron.review',
+    new AnnotronEditorProvider(),
+    { webviewOptions: { retainContextWhenHidden: true }, supportsMultipleEditorsPerDocument: true }
+  ));
   // Forget an agent when its terminal is closed, so it can be restarted.
   ctx.subscriptions.push(vscode.window.onDidCloseTerminal((t) => {
     for (const [f, term] of agents) if (term === t) agents.delete(f);

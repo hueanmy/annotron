@@ -2,6 +2,16 @@
 
 All notable changes to annotron are documented in this file.
 
+## [1.1.1] - 2026-07-23
+
+### ✨ Added
+
+- **VS Code "Open With…" support** — annotron now registers a custom editor, so it appears in VS Code's native **Open With…** picker for `.md`, `.markdown`, `.html`, and `.htm` files. Picking it opens the review UI right inside a VS Code editor tab (iframe onto the bundled server) instead of only an external browser. Registered with `priority: "option"` — it never overrides your default editor. The existing **Open in annotron** context-menu command is unchanged.
+
+### 🔧 Changed
+
+- **Version alignment** — npm CLI and the VS Code / OpenVSX extension are both **1.1.1**, and the extension now vendors the matching 1.1.1 server (all Mermaid types + inline text edit).
+
 ## [1.1.0] - 2026-07-23
 
 ### ✨ Added

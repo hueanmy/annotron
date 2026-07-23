@@ -27,6 +27,7 @@
 ## Usage
 
 - **Explorer / editor right‑click** → *Open in annotron* (on `.md` / `.html`).
+- **Open With…** → *annotron* — Ctrl/Cmd‑click a `.md`/`.html` file → **Open With…** → **annotron** opens the review UI right inside a VS Code editor tab. annotron is offered as an option and never overrides your default editor.
 - **Command Palette** → `annotron: Open in annotron` (uses the active editor's file).
 - `annotron: Stop annotron server` shuts the background server down.
 
