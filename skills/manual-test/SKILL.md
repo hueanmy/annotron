@@ -98,20 +98,17 @@ Paths: `A = docs/epics/<epic>/artifacts`, `MD = $A/MANUAL-RESULTS.md`,
 
    Never edit while a poll is in flight — always wait for the JSON first.
 
-6. **Propagate metadata (no HTML read).** The autosave server has been writing
-   `$MD` continuously; `$MD` is the source of truth for state. HTML on disk is
-   a stale render — reading it would clobber recent autosaved edits (this
-   caused data-loss in earlier iterations). Instead:
-   - `annotron-mr commit-md "$MD"` — read `$MD`, diff metadata columns against
-     `TEST-CASES/`, patch any changes back. Does NOT rewrite `$MD`.
-   - `annotron-mr render "$MD"` — re-render `$HTML` so it reflects the latest
-     `.md` (harmless if annotron is already stopped).
+6. **Flush + propagate metadata.** Kill the autosave server FIRST so its
+   SIGTERM handler flushes any pending in-memory writes to `$MD` before we
+   read it. Then commit-md reads the fully-flushed file.
+   - `kill <autosave-pid> 2>/dev/null || pkill -f "annotron-mr autosave" 2>/dev/null; sleep 0.5`
+     — stop autosave, wait for flush to land on disk.
+   - `annotron-mr commit-md "$MD"` — read the now-complete `$MD`, diff metadata
+     columns against `TEST-CASES/`, patch any changes back. Does NOT rewrite `$MD`.
+   - `annotron-mr render "$MD"` — re-render `$HTML` so it reflects the latest `.md`.
 
-7. **Report + cleanup.** Reply to the user (via `annotron poll --reply` if the
-   server is still up, or a normal turn reply if not) with a one-line summary:
-   Pass / Fail / N/A / Untested counts + any TEST-CASES/ files touched. Then:
-   - `kill <autosave-pid>` (or `pkill -f "annotron-mr autosave"` as fallback)
-     — stop the background autosave server.
+7. **Report + cleanup.** Reply with a one-line summary: Pass / Fail / N/A /
+   Untested counts + any TEST-CASES/ files touched. Then:
    - `annotron stop` — stop annotron.
    Stop.
 
