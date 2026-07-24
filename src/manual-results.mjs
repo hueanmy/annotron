@@ -195,6 +195,9 @@ function cmdGen(artifactsDir) {
   const cases = collectCases(artifactsDir);
   const mdPath = path.join(artifactsDir, 'MANUAL-RESULTS.md');
   const existing = fs.existsSync(mdPath) ? parseExisting(fs.readFileSync(mdPath, 'utf8')) : new Map();
+  if (cases.length === 0 && existing.size > 0) {
+    die(`gen found 0 cases in TEST-CASES/ but ${existing.size} cases exist in MANUAL-RESULTS.md — aborting to avoid data loss.\nCheck that TC IDs match the pattern ^[A-Z]...-TC-\\d+$ or ^TC-...-\\d+$.`);
+  }
   for (const c of cases) {
     const prev = existing.get(c.id);
     c.result = prev?.result || 'Untested';
