@@ -339,8 +339,6 @@ body { padding-top: 3.5rem !important; }
 }
 #mr-toolbar button:hover:not(:disabled) { background: var(--accent-hover); }
 #mr-toolbar button:disabled { opacity: .45; cursor: default; }
-#mr-btn-commit { background: transparent; color: var(--accent); border: 1px solid var(--line-14); }
-#mr-btn-commit:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); }
 #mr-search {
   flex: 0 1 22rem; min-width: 10rem; height: 32px; padding: 0 .8em;
   font: 13px var(--ui); background: var(--bg); color: var(--ink);
@@ -743,11 +741,7 @@ const MR_SYNC_SCRIPT = `
   document.body.appendChild(ping);
   setTimeout(function () { ping.style.opacity = '0'; }, 2000);
 
-  // ── Explicit Save / Commit buttons — sit on top of the debounced autosave and
-  //    give the user an "I'm done editing this row" affordance. Save writes
-  //    MANUAL-RESULTS.md only; Commit also patches TEST-CASES/<feature>.md.
   var btnSave   = document.getElementById('mr-btn-save');
-  var btnCommit = document.getElementById('mr-btn-commit');
   var status    = document.getElementById('mr-toolbar-status');
   var toastLayer = document.getElementById('mr-toast-layer');
 
@@ -814,43 +808,14 @@ const MR_SYNC_SCRIPT = `
       var data = await res.json();
       var now = new Date().toLocaleTimeString();
 
-      if (endpoint === '/commit') {
-        // Show a rich toast summarising exactly what happened.
-        var files = data.patchedFiles || [];
-        var bodyParts = [];
-        bodyParts.push('<strong>MANUAL-RESULTS.md</strong> updated · <strong>' + data.updated + '</strong> row' + (data.updated === 1 ? '' : 's') + '.');
-        if (files.length) {
-          bodyParts.push('Metadata propagated to <strong>TEST-CASES/</strong>:<ul>' +
-            files.map(function (f) { return '<li><code>' + escapeHtml(f.path.split('/').pop()) + '</code> — ' + f.rows + ' row' + (f.rows === 1 ? '' : 's') + '</li>'; }).join('') +
-            '</ul>');
-        } else {
-          bodyParts.push('<em>No metadata changes to propagate — TEST-CASES/ untouched.</em>');
-        }
-        var warns = [];
-        if (data.featureChanges && data.featureChanges.length) {
-          warns.push('Feature moves NOT applied (do manually): ' + data.featureChanges.map(function (c) { return '<code>' + escapeHtml(c.id) + '</code>: ' + escapeHtml(c.from) + ' → ' + escapeHtml(c.to); }).join(', '));
-        }
-        if (data.planReviewFeatures && data.planReviewFeatures.length) {
-          warns.push('<code>TEST-PLAN.md</code> mentions these features — review manually if scenarios changed: <strong>' + data.planReviewFeatures.map(escapeHtml).join(', ') + '</strong>');
-        }
-        if (warns.length) {
-          bodyParts.push('<div style="margin-top:.6em;padding-top:.6em;border-top:1px solid var(--border);color:#f39c12;">⚠ ' + warns.join('<br>⚠ ') + '</div>');
-          showToast('warn', '✅ Committed with warnings · ' + now, bodyParts.join(''), { autoCloseMs: 0 });
-        } else {
-          showToast('ok', '✅ Committed at ' + now, bodyParts.join(''));
-        }
-        setStatus('Committed at ' + now, 'ok');
-        tbl.querySelectorAll('td.mr-dirty').forEach(function (td) { td.classList.remove('mr-dirty'); });
-        tbl.querySelectorAll('input,textarea,select').forEach(function (el) {
-          initial.set(el, el.tagName === 'SELECT' ? el.value : (el.value || ''));
-        });
-        updateSummary();
-      } else {
-        showToast('ok', '💾 Saved at ' + now,
-          '<strong>MANUAL-RESULTS.md</strong> written. TEST-CASES/ untouched.<br>' +
-          'Use <strong>Commit &amp; sync sources</strong> to propagate metadata edits.');
-        setStatus('Saved at ' + now, 'ok');
-      }
+      showToast('ok', '💾 Saved at ' + now,
+        '<strong>MANUAL-RESULTS.md</strong> written — Pass/Fail/N/A results safe on disk.');
+      setStatus('Saved at ' + now, 'ok');
+      tbl.querySelectorAll('td.mr-dirty').forEach(function (td) { td.classList.remove('mr-dirty'); });
+      tbl.querySelectorAll('input,textarea,select').forEach(function (el) {
+        initial.set(el, el.tagName === 'SELECT' ? el.value : (el.value || ''));
+      });
+      updateSummary();
 
       try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
       setBtnState(btn, 'success', labels.success);
@@ -964,15 +929,6 @@ const MR_SYNC_SCRIPT = `
       failed:  '❌ Failed',
     });
   });
-  if (btnCommit) btnCommit.addEventListener('click', function () {
-    if (!confirm('Commit metadata edits to TEST-CASES/<feature>.md?\\n\\nDescription / Preconditions / Steps / Expected / Priority changes will be written back to the source files.\\n\\nResult and Notes always go to MANUAL-RESULTS.md.')) return;
-    callEndpoint('/commit', btnCommit, {
-      normal:  '📥 Commit & sync sources',
-      working: '⏳ Committing…',
-      success: '✅ Committed',
-      failed:  '❌ Failed',
-    });
-  });
 
   // Restore on load (after initial values snapshot has been captured).
   setTimeout(function () {
@@ -1020,8 +976,7 @@ function cmdRender(mdPath, outPath) {
 </head>
 <body>
 <div id="mr-toolbar">
-  <button id="mr-btn-save" title="Save results to MANUAL-RESULTS.md now (does not sync to TEST-CASES/)">💾 Save now</button>
-  <button id="mr-btn-commit" title="Save + propagate metadata edits back to TEST-CASES/&lt;feature&gt;.md">📥 Commit &amp; sync sources</button>
+  <button id="mr-btn-save" title="Flush Pass/Fail/N/A results to MANUAL-RESULTS.md immediately. Autosave already does this every ~1s — use this when you want to be sure before stepping away.">💾 Save now</button>
   <input id="mr-search" type="search" placeholder="Search cases…  (Ctrl/Cmd-F or /)" autocomplete="off" />
   <select id="mr-filter-result" title="Filter by result">
     <option value="">All results</option>
