@@ -207,6 +207,17 @@ function cmdGen(artifactsDir) {
   fs.writeFileSync(mdPath, renderManualResultsMd(cases, epicId), 'utf8');
   const kept = [...existing.keys()].filter(id => cases.find(c => c.id === id)).length;
   const added = cases.length - kept;
+  // Warn about IDs that had a non-Untested result but are gone from TEST-CASES/ — likely a rename.
+  const dropped = [...existing.entries()].filter(([id, row]) =>
+    row.result && row.result !== 'Untested' && !cases.find(c => c.id === id)
+  );
+  if (dropped.length > 0) {
+    console.warn(
+      `\n⚠️  WARNING: ${dropped.length} case(s) with recorded results were removed from TEST-CASES/ and their results are lost:\n` +
+      dropped.map(([id, row]) => `   • ${id}  (was: ${row.result})`).join('\n') +
+      '\n   If this was a rename, update the TC ID in TEST-CASES/ to match the old ID to preserve the result.\n'
+    );
+  }
   console.log(`wrote ${mdPath} — ${cases.length} cases (${added} new, ${kept} preserved)`);
 }
 
@@ -546,6 +557,7 @@ const MR_SYNC_SCRIPT = `
       if (td) td.className = td.className.replace(/\\bmr-r-[A-Za-z]+\\b/g, '').trim() + ' mr-r-' + suffix;
     }
     markDirty(t);
+    if (t.dataset.tcId) dirtyTcIds.add(t.dataset.tcId);
     updateSummary();
     scheduleAutoSave();
     markLocalChange();
@@ -563,6 +575,7 @@ const MR_SYNC_SCRIPT = `
       t.setAttribute('value', t.value);
     }
     markDirty(t);
+    if (t.dataset.tcId) dirtyTcIds.add(t.dataset.tcId);
     updateSummary();
     scheduleAutoSave();
     markLocalChange();
@@ -572,11 +585,21 @@ const MR_SYNC_SCRIPT = `
   //    power loss / accidental reload. Debounced 500ms. On next open, we compare
   //    the saved state with the freshly rendered DOM and offer to restore.
   var saveTimer, pingTimer;
+  var dirtyTcIds = new Set();
   function collectAllValues() {
     var out = {};
     tbl.querySelectorAll('[data-tc-id][data-field]').forEach(function (el) {
       var id = el.dataset.tcId, field = el.dataset.field;
       (out[id] = out[id] || {})[field] = el.value;
+    });
+    return out;
+  }
+  function collectDirtyValues() {
+    var out = {};
+    dirtyTcIds.forEach(function (id) {
+      tbl.querySelectorAll('[data-tc-id="' + id + '"][data-field]').forEach(function (el) {
+        (out[id] = out[id] || {})[el.dataset.field] = el.value;
+      });
     });
     return out;
   }
@@ -638,7 +661,9 @@ const MR_SYNC_SCRIPT = `
   function diskSaveIfDirty() {
     if (!serverAlive || !MD_PATH) return;
     if (lastLocalSaveMark <= lastDiskSaveAt) return; // nothing changed since last disk save
-    var values = collectAllValues();
+    var values = dirtyTcIds.size ? collectDirtyValues() : {};
+    if (!Object.keys(values).length) return;
+    var snapshot = new Set(dirtyTcIds); // capture before async completes
     fetch(AUTOSAVE_URL + '/save', {
       method: 'POST',
       mode: 'cors',
@@ -648,6 +673,7 @@ const MR_SYNC_SCRIPT = `
     }).then(function (r) {
       if (r.ok) {
         lastDiskSaveAt = Date.now();
+        snapshot.forEach(function (id) { dirtyTcIds.delete(id); }); // clear only what was sent
         if (Date.now() - lastPingAt > 5000) {
           lastPingAt = Date.now();
           flashPing('Saved to disk · ' + new Date().toLocaleTimeString());
@@ -1304,9 +1330,13 @@ function cmdAutosave(artifactsDir, args) {
   };
   const readBody = (req) => new Promise((resolve, reject) => {
     let raw = '';
-    req.on('data', c => { raw += c; if (raw.length > 2 * 1024 * 1024) req.destroy(); });
-    req.on('end', () => { try { resolve(raw ? JSON.parse(raw) : {}); } catch (e) { reject(e); } });
-    req.on('error', reject);
+    let tooLarge = false;
+    req.on('data', c => {
+      raw += c;
+      if (raw.length > 20 * 1024 * 1024) { tooLarge = true; req.destroy(); reject(new Error('Request body too large (>20MB)')); }
+    });
+    req.on('end', () => { if (tooLarge) return; try { resolve(raw ? JSON.parse(raw) : {}); } catch (e) { reject(e); } });
+    req.on('error', (e) => { if (!tooLarge) reject(e); });
   });
 
   // Debounce writes per file so a burst of keystrokes lands as one filesystem write.
