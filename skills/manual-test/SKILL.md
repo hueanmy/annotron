@@ -37,11 +37,13 @@ Paths: `A = docs/epics/<epic>/artifacts`, `MD = $A/MANUAL-RESULTS.md`,
 
 ## Loop
 
-1. **Generate / refresh the results file.** `annotron-mr gen "$A"` — scans
-   `$A/TEST-CASES/*.md`, collects every row whose first cell matches
-   `<PREFIX>-TC-*`, writes/merges `$MD`. New cases start `Result=Untested`,
-   existing Result/Notes preserved across regens. Report the count (new +
-   preserved) to the user.
+1. **Generate / refresh the results file.**
+   - If `$MD` **already exists** — skip gen, go straight to step 2. The existing
+     file already has the cases and results; re-rendering is enough.
+   - If `$MD` **does not exist** — run `annotron-mr gen "$A"`: scans
+     `$A/TEST-CASES/*.md`, collects every row whose first cell matches
+     `<PREFIX>-TC-*` (any uppercase prefix), writes `$MD`. Report the case
+     count to the user.
 
 2. **Render.** `annotron-mr render "$MD"` — writes `$HTML` with editable form
    controls (every column except TC ID). The renderer mirrors form state into
