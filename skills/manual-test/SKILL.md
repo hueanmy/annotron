@@ -35,6 +35,16 @@ Save / Commit buttons. Never hand-edit the `.html`.
 Paths: `A = docs/epics/<epic>/artifacts`, `MD = $A/MANUAL-RESULTS.md`,
 `HTML = $A/MANUAL-RESULTS.html`.
 
+**Before any tool command**, ensure the npm bin directory is on PATH (handles nvm PATH gaps):
+```bash
+if ! command -v annotron-mr &>/dev/null; then
+  NODE_BIN="$(ls "$HOME/.nvm/versions/node/"*/bin/node 2>/dev/null | sort -V | tail -1)"
+  [ -n "$NODE_BIN" ] && export PATH="$(dirname "$NODE_BIN"):$PATH"
+fi
+```
+If `annotron-mr` is still not found after this, stop and tell the user to run
+`npm install -g annotron` and ensure Node.js is available.
+
 ## Loop
 
 1. **Generate / refresh the results file.**
@@ -60,9 +70,7 @@ Paths: `A = docs/epics/<epic>/artifacts`, `MD = $A/MANUAL-RESULTS.md`,
    needed, prints the editor URL. Tell the user:
    - Click through the Result dropdowns; type into any cell (except TC ID).
    - The sticky Summary bar updates live.
-   - Use the in-page **💾 Save now** button to flush edits to `$MD` at will;
-     **📥 Commit & sync sources** to also propagate metadata edits back to
-     `TEST-CASES/<feature>.md`.
+   - Use the in-page **💾 Save now** button to flush all edits to `$MD` at will.
    - When done marking, click **Finalize** (or type `done` / `xong` and Send)
      to snapshot the current state and end the loop.
 
