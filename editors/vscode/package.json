@@ -29,7 +29,7 @@
     "customEditors": [
       {
         "viewType": "annotron.review",
-        "displayName": "annotron",
+        "displayName": "Annotron",
         "selector": [
           { "filenamePattern": "*.md" },
           { "filenamePattern": "*.markdown" },
@@ -40,20 +40,31 @@
       }
     ],
     "commands": [
-      { "command": "annotron.open", "title": "Open in annotron", "category": "annotron" },
-      { "command": "annotron.stop", "title": "Stop annotron server", "category": "annotron" }
+      { "command": "annotron.open", "title": "Open in Annotron", "category": "Annotron", "icon": "$(preview)" },
+      { "command": "annotron.stop", "title": "Stop Annotron server", "category": "Annotron" }
     ],
     "menus": {
       "explorer/context": [
-        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@50" }
+        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@1" }
       ],
       "editor/context": [
-        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@50" }
+        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@1" }
+      ],
+      "editor/title": [
+        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@1" }
       ],
       "editor/title/context": [
-        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@50" }
+        { "command": "annotron.open", "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm", "group": "navigation@1" }
       ]
     },
+    "keybindings": [
+      {
+        "command": "annotron.open",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "resourceExtname == .md || resourceExtname == .markdown || resourceExtname == .html || resourceExtname == .htm"
+      }
+    ],
     "configuration": {
       "title": "annotron",
       "properties": {

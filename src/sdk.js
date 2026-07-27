@@ -234,7 +234,7 @@
       quote: selected.text,
       placeholder: 'Add your comment…',
       anchorRect: selected.anchorRect,
-      onAdd: note => {
+      onAdd: (note, images) => {
         window.parent.postMessage({
           [TAG]: true,
           type: 'text-selected',
@@ -242,6 +242,7 @@
           text: selected.text,
           label: selected.label,
           note,
+          images: images || [],
           textStart: selected.textStart,
           textEnd: selected.textEnd,
           textPrefix: selected.textPrefix,
@@ -566,19 +567,36 @@
     body.textContent = makeSnippet(latestMessage(annotation));
 
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;';
+    row.style.cssText = 'display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;';
 
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.textContent = 'Close';
-    close.style.cssText = "border:1px solid rgba(27,26,61,.14);border-radius:8px;padding:6px 12px;background:#fff;color:rgba(27,26,61,.7);cursor:pointer;font:600 11.5px 'Inter',system-ui,sans-serif;";
+    const secondaryStyle = "border:1px solid rgba(27,26,61,.14);border-radius:8px;padding:6px 12px;background:#fff;color:rgba(27,26,61,.7);cursor:pointer;font:600 11.5px 'Inter',system-ui,sans-serif;";
+
+    // Resolve / Reopen — act on the comment without leaving the document.
+    const resolve = document.createElement('button');
+    resolve.type = 'button';
+    resolve.textContent = resolved ? 'Reopen' : 'Resolve';
+    resolve.style.cssText = resolved
+      ? secondaryStyle + 'margin-right:auto;'
+      : "border:1px solid rgba(47,191,113,.5);border-radius:8px;padding:6px 12px;background:#fff;color:#1c8a4e;cursor:pointer;font:600 11.5px 'Inter',system-ui,sans-serif;margin-right:auto;";
+    resolve.addEventListener('click', () => {
+      window.parent.postMessage({ [TAG]: true, type: 'toggle-resolve', id: annotation.id }, '*');
+      clearCommentPopup();
+    });
+
+    // Reply — jump into the sidebar thread with the reply editor already open.
+    const reply = document.createElement('button');
+    reply.type = 'button';
+    reply.textContent = 'Reply';
+    reply.style.cssText = secondaryStyle;
+    reply.addEventListener('click', () => {
+      window.parent.postMessage({ [TAG]: true, type: 'reply-annotation', id: annotation.id }, '*');
+      clearCommentPopup();
+    });
 
     const open = document.createElement('button');
     open.type = 'button';
     open.textContent = 'Open thread';
     open.style.cssText = "border:0;border-radius:8px;padding:6px 13px;background:#2741F1;color:#fff;cursor:pointer;font:600 11.5px 'Inter',system-ui,sans-serif;";
-
-    close.addEventListener('click', () => clearCommentPopup());
     open.addEventListener('click', () => {
       window.parent.postMessage({ [TAG]: true, type: 'annotation-selected', id: annotation.id }, '*');
       clearCommentPopup();
@@ -590,7 +608,7 @@
       }
     });
 
-    row.append(close, open);
+    row.append(resolve, reply, open);
     popup.append(title, label, body, row);
     document.documentElement.appendChild(popup);
 
@@ -617,17 +635,24 @@
     const resolved = annotation.status === 'resolved';
     const bg = resolved ? '#2fbf71' : (selected ? '#1B1A3D' : '#2741F1');
     button.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    // The selected pin gets a white ring + slight scale so it reads as active
+    // even when adjacent commented elements each carry their own pin.
+    const size = selected ? 26 : 22;
+    const shadow = selected
+      ? '0 0 0 2px #fff,0 0 0 4px rgba(27,26,61,.28),0 4px 12px rgba(27,26,61,.34)'
+      : '0 3px 10px rgba(27,26,61,.32)';
     button.style.cssText = [
       'position:absolute',
-      `left:${Math.max(2, Math.min(window.innerWidth - 24, rect.right - 10))}px`,
+      `left:${Math.max(2, Math.min(window.innerWidth - size - 2, rect.right - 10))}px`,
       `top:${Math.max(2, rect.top - 10)}px`,
-      'width:22px', 'height:22px', 'padding:0',
+      `width:${size}px`, `height:${size}px`, 'padding:0',
+      `z-index:${selected ? 3 : 2}`,
       'display:grid', 'place-items:center',
       'border-radius:8px 8px 8px 2px',
       'border:none',
       `background:${bg}`,
       'color:#fff',
-      'box-shadow:0 3px 10px rgba(27,26,61,.32)',
+      `box-shadow:${shadow}`,
       'cursor:pointer', 'pointer-events:auto',
     ].join(';');
     button.addEventListener('click', e => {
@@ -663,21 +688,28 @@
       if (!rects.length) continue;
       const selected = annotation.id === selectedAnnotationId;
       const resolved = annotation.status === 'resolved';
-      // Subtle, design-matched palette: faint tint + a thin underline for text,
-      // a soft outline for elements. Selected only deepens slightly.
-      const tint = resolved ? '.13' : (selected ? '.18' : '.11');
-      const line = resolved ? '.4' : (selected ? '.7' : '.45');
+      // The selected annotation must be unmistakable — even when several
+      // commented elements sit right next to each other. So: the selected mark
+      // pops (deep tint, solid outline, a soft glow) while a merely-commented
+      // mark is intentionally faint so it never competes with the selection.
       const rgb = resolved ? '47,191,113' : '39,65,241';
+      const tint = resolved ? '.10' : (selected ? '.22' : '.07');
+      const line = resolved ? '.45' : (selected ? '1' : '.30');
       const fill = `rgba(${rgb},${tint})`;
+      const hoverFill = `rgba(${rgb},${selected ? '.28' : '.15'})`;
       const underline = `rgba(${rgb},${line})`;
+      const outlineW = selected ? '2.5px' : '1.5px';
+      const underlineW = selected ? '2.5px' : '1.5px';
+      const glow = selected ? `box-shadow:0 0 0 2px rgba(${rgb},.28),0 4px 14px rgba(${rgb},.30);` : '';
+      const z = selected ? 2 : 1;
       rects.forEach((rect, i) => {
         const mark = document.createElement('div');
         mark.setAttribute('data-annotron-ui', 'annotation-mark');
         mark.style.cssText = annotation.kind === 'text'
-          ? `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;background:${fill};border-bottom:1.5px solid ${underline};border-radius:2px;cursor:pointer;pointer-events:auto;transition:background .12s;`
-          : `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;outline:1.5px solid ${underline};outline-offset:2px;border-radius:3px;background:${fill};cursor:pointer;pointer-events:auto;transition:background .12s;`;
+          ? `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;z-index:${z};background:${fill};border-bottom:${underlineW} solid ${underline};border-radius:2px;${glow}cursor:pointer;pointer-events:auto;transition:background .12s,box-shadow .12s;`
+          : `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;z-index:${z};outline:${outlineW} solid ${underline};outline-offset:2px;border-radius:3px;background:${fill};${glow}cursor:pointer;pointer-events:auto;transition:background .12s,box-shadow .12s;`;
         mark.addEventListener('mouseenter', () => {
-          mark.style.background = `rgba(${rgb},.2)`;
+          mark.style.background = hoverFill;
           showHoverPopup(annotation, mark.getBoundingClientRect());
         });
         mark.addEventListener('mouseleave', () => {
@@ -706,6 +738,17 @@
   window.addEventListener('load', scheduleAnnotationsRender);
   document.addEventListener('scroll', scheduleAnnotationsRender, true);
   document.addEventListener('load', scheduleAnnotationsRender, true);
+
+  // The transient popovers (inline composer, selection toolbar, context menu,
+  // comment/hover popups) are pinned to a fixed on-screen position, so once the
+  // page scrolls they no longer line up with what they point at — close them.
+  // Scrolls that originate inside our own UI (e.g. the composer textarea) are
+  // ignored so typing a long comment doesn't dismiss the composer.
+  document.addEventListener('scroll', e => {
+    if (isAnnotronEl(e.target)) return;
+    clearHoverPopup();
+    if (cardEl || quickCommentBtnEl || textContextMenuEl || commentPopupEl) dismissCard();
+  }, true);
 
   // ── Inline composer card ────────────────────────────────────────────────
   const FONT = "'Inter',system-ui,-apple-system,sans-serif";
@@ -784,8 +827,63 @@
     ta.addEventListener('focus', () => { ta.style.borderColor = '#2741F1'; ta.style.boxShadow = '0 0 0 3px rgba(39,65,241,.12)'; });
     ta.addEventListener('blur', () => { ta.style.borderColor = 'rgba(27,26,61,.14)'; ta.style.boxShadow = 'none'; });
 
+    // Image attachments staged right here in the composer (feedback: the
+    // add-image affordance should be present while writing the comment, not
+    // only after it's been posted). Files are read to data URLs and handed to
+    // the chrome alongside the note; it uploads them when feedback is sent.
+    const stagedImages = [];
+    const previews = document.createElement('div');
+    previews.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;';
+    function renderPreviews() {
+      previews.innerHTML = '';
+      stagedImages.forEach(img => {
+        const thumb = document.createElement('div');
+        thumb.style.cssText = 'position:relative;width:46px;height:46px;border-radius:8px;border:1px solid rgba(27,26,61,.14);overflow:hidden;background:#F3F3F8;flex:none;';
+        const im = document.createElement('img');
+        im.src = img.dataUrl; im.alt = img.name;
+        im.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.textContent = '×'; rm.title = 'Remove image';
+        rm.style.cssText = 'position:absolute;top:1px;right:1px;width:17px;height:17px;padding:0;border:none;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px;line-height:15px;cursor:pointer;';
+        rm.addEventListener('click', e => { e.stopPropagation(); const i = stagedImages.indexOf(img); if (i >= 0) stagedImages.splice(i, 1); renderPreviews(); });
+        thumb.append(im, rm);
+        previews.appendChild(thumb);
+      });
+    }
+    function addImageFile(blob) {
+      if (!blob || !blob.type || !blob.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        stagedImages.push({
+          id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          name: blob.name || ('pasted.' + (blob.type.split('/')[1] || 'png')),
+          dataUrl: reader.result,
+        });
+        renderPreviews();
+      };
+      reader.readAsDataURL(blob);
+    }
+
+    const imgInput = document.createElement('input');
+    imgInput.type = 'file'; imgInput.accept = 'image/*'; imgInput.multiple = true; imgInput.style.display = 'none';
+    imgInput.addEventListener('change', () => { for (const f of imgInput.files) addImageFile(f); imgInput.value = ''; });
+    ta.addEventListener('paste', e => {
+      const items = e.clipboardData?.items || [];
+      let handled = false;
+      for (const it of items) {
+        if (it.type && it.type.startsWith('image/')) { const b = it.getAsFile(); if (b) { addImageFile(b); handled = true; } }
+      }
+      if (handled) e.preventDefault();
+    });
+
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:10px;';
+    row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:10px;';
+
+    const btnImg = document.createElement('button');
+    btnImg.type = 'button'; btnImg.title = 'Attach image(s)';
+    btnImg.style.cssText = `height:32px;padding:0 11px;border-radius:8px;border:1px solid rgba(27,26,61,.14);background:#fff;color:rgba(27,26,61,.7);font:600 12.5px ${FONT};cursor:pointer;margin-right:auto;display:inline-flex;align-items:center;gap:5px;`;
+    btnImg.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg><span>Image</span>';
+    btnImg.addEventListener('click', e => { e.stopPropagation(); imgInput.click(); });
 
     const btnCancel = document.createElement('button');
     btnCancel.textContent = 'Cancel';
@@ -794,14 +892,20 @@
     btnAdd.textContent = 'Comment';
     btnAdd.style.cssText = `height:32px;padding:0 15px;border-radius:8px;border:none;background:#2741F1;color:#fff;font:600 12.5px ${FONT};cursor:pointer;`;
 
-    row.append(btnCancel, btnAdd);
+    row.append(btnImg, btnCancel, btnAdd);
     cardEl.append(hdg);
     if (quoteEl) cardEl.append(quoteEl);
-    cardEl.append(ta, row);
+    cardEl.append(ta, previews, row, imgInput);
     document.documentElement.appendChild(cardEl);
     positionCard(anchorRect);
 
-    const submit = () => { const v = ta.value.trim(); if (!v) { ta.focus(); return; } onAdd(v); dismissCard(); };
+    // A comment with only images (no text) is valid; require at least one of them.
+    const submit = () => {
+      const v = ta.value.trim();
+      if (!v && !stagedImages.length) { ta.focus(); return; }
+      onAdd(v, stagedImages.slice());
+      dismissCard();
+    };
 
     btnCancel.addEventListener('click', e => { e.stopPropagation(); dismissCard(); });
     btnAdd.addEventListener('click', e => { e.stopPropagation(); submit(); });
@@ -948,6 +1052,7 @@
     const el = e.target;
     const selector = cssPath(el);
     const label = labelFor(el);
+    const tag = el.tagName.toLowerCase();
     const anchorRect = el.getBoundingClientRect();
     const quote = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120);
 
@@ -957,8 +1062,10 @@
       quote,
       placeholder: 'What should change about this element?',
       anchorRect,
-      onAdd: note => {
-        window.parent.postMessage({ [TAG]: true, type: 'element-selected', selector, label, note }, '*');
+      // Send the element's tag + text separately so the sidebar can render a
+      // clean quote (a tag chip + the text) instead of a raw "<tag> …" label.
+      onAdd: (note, images) => {
+        window.parent.postMessage({ [TAG]: true, type: 'element-selected', selector, label, tag, text: quote, note, images: images || [] }, '*');
       },
     });
   }, true);
