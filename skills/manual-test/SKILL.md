@@ -36,12 +36,12 @@ Then let:
 ## Loop
 
 1. **Generate / refresh the results file.**
-   - If `$MD` **already exists** — skip gen, go straight to step 2. The existing
-     file already has the cases and results; re-rendering is enough.
-   - If `$MD` **does not exist** — run `$T gen "$A"`: scans `$A/TEST-CASES/*.md`,
-     collects every row whose first cell matches `<PREFIX>-TC-<N>` or
-     `TC-<PREFIX>-<N>` (any uppercase prefix), writes `$MD`. Report the case
-     count to the user.
+   Run `$T gen "$A"` unconditionally: scans `$A/TEST-CASES/*.md`, collects every
+   row whose first cell matches `<PREFIX>-TC-<N>` or `TC-<PREFIX>-<N>` (any
+   uppercase prefix), writes/merges `$MD`. If `$MD` already existed, existing
+   Result/Notes are preserved; any TC IDs present in TEST-CASES/ but missing from
+   `$MD` are appended with `Result=Untested`. Report the case count (and how many
+   were new vs. preserved) to the user.
 
 2. **Render.** `$T render "$MD"` — writes `$HTML` with editable form
    controls (every column except TC ID). The renderer mirrors form state into
