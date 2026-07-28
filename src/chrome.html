@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>annotron</title>
+<title>Annotron</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -247,7 +247,11 @@
   .ann-remove { margin-left: 4px; width: 22px; height: 22px; border-radius: 6px; background: none; color: var(--dim-45); font-size: 15px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; flex: none; }
   .ann-remove:hover { background: var(--bg); color: var(--coral); }
 
-  .ann-quote { border-left: 3px solid rgba(216,134,137,.7); padding: 1px 0 1px 9px; font: italic 400 12px/1.45 var(--ui); color: var(--dim-5); margin-bottom: 8px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+  .ann-quote { border-left: 3px solid rgba(216,134,137,.7); padding: 2px 0 2px 9px; margin-bottom: 8px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+  .ann-quote-tag { flex: none; padding: 1px 7px; border-radius: 999px; background: var(--bg); color: var(--dim-6); font: 600 10px var(--mono); letter-spacing: .02em; }
+  .ann-quote-text { flex: 1 1 auto; min-width: 0; font: italic 400 12px/1.45 var(--ui); color: var(--dim-5); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; word-break: break-word; }
+  .ann-quote-text::before { content: '\201C'; }
+  .ann-quote-text::after { content: '\201D'; }
 
   .ann-thread { display: flex; flex-direction: column; gap: 8px; }
   .tmsg { font: 400 13.5px/1.55 var(--ui); color: var(--ink-82); }
@@ -430,7 +434,7 @@
 
 <header id="topbar">
   <div class="left">
-    <span class="logo">annotron</span>
+    <span class="logo">Annotron</span>
     <span class="divider"></span>
     <span id="file-crumb">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M9 4h6l5 5v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v5h5"/></svg>
@@ -1016,12 +1020,12 @@ window.addEventListener('message', (e) => {
     return;
   }
   if (d.type === 'element-selected') {
-    addPending({ kind: 'element', selector: d.selector, label: d.label, text: '', note: d.note || '' });
+    addPending({ kind: 'element', selector: d.selector, label: d.label, tag: d.tag || '', text: d.text || '', note: d.note || '', images: d.images || [] });
     return;
   }
   if (d.type === 'text-selected') {
     addPending({
-      kind: 'text', selector: d.selector, label: d.label, text: d.text, note: d.note || '',
+      kind: 'text', selector: d.selector, label: d.label, text: d.text, note: d.note || '', images: d.images || [],
       textStart: d.textStart, textEnd: d.textEnd,
       textPrefix: d.textPrefix || '', textSuffix: d.textSuffix || '',
     });
@@ -1046,6 +1050,17 @@ window.addEventListener('message', (e) => {
   if (d.type === 'annotation-selected') {
     switchTab('annotations');
     selectAnnotation(d.id);
+    return;
+  }
+  if (d.type === 'toggle-resolve') {
+    toggleResolve(d.id);
+    return;
+  }
+  if (d.type === 'reply-annotation') {
+    const ann = visibleAnnotations().find(a => a.id === d.id);
+    openReplyId = d.id;
+    switchTab(ann && ann.status === 'resolved' ? 'history' : 'annotations');
+    selectAnnotation(d.id, true);
     return;
   }
   if (d.type === 'serialized') {
@@ -1167,6 +1182,15 @@ async function saveAnnotations() {
 // ── New pending comment (note captured by the inline composer in the artifact) ─
 function addPending(item) {
   item.id = 'pending_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  // Images staged in the artifact composer ride along; move them into the
+  // note's image store so the pending card shows them and Send uploads them.
+  if (item.images && item.images.length) {
+    noteImgStore[item.id] = item.images.map(im => ({
+      id: im.id || ('img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
+      name: im.name, dataUrl: im.dataUrl,
+    }));
+  }
+  delete item.images;
   pendingNew.push(item);
   selectedAnnotationId = item.id;
   switchTab('annotations');
@@ -1253,6 +1277,47 @@ function buildEmptyState(title, subHtml) {
   return wrap;
 }
 
+// labelFor() (in the SDK) emits "<tag#id.cls> \"text\"" for element comments.
+// Split it back into { tag, text } so we can render them separately instead of
+// showing the raw string.
+function parseLabel(label) {
+  const m = /^<([^>]+)>\s*(?:"([\s\S]*)")?\s*$/.exec(String(label || '').trim());
+  if (m) return { tag: m[1] || '', text: m[2] || '' };
+  return { tag: '', text: String(label || '') };
+}
+
+// Build the quote block shown under a comment's header: a small element-type
+// chip (for element comments) plus the quoted target text, cleanly formatted.
+function buildQuoteBlock(ann) {
+  let tag = ann.tag || '';
+  let text = ann.text || '';
+  // Older element annotations only carried the packed label — recover from it.
+  if (!text || (!tag && ann.kind === 'element')) {
+    const parsed = parseLabel(ann.label);
+    if (!tag) tag = parsed.tag;
+    if (!text) text = parsed.text;
+  }
+  text = String(text || '').trim();
+  const tagName = ann.kind === 'element' ? (tag.split(/[#.]/)[0] || '') : '';
+  if (!text && !tagName) return null;
+
+  const q = document.createElement('div');
+  q.className = 'ann-quote';
+  if (tagName) {
+    const chip = document.createElement('span');
+    chip.className = 'ann-quote-tag';
+    chip.textContent = tagName;
+    q.appendChild(chip);
+  }
+  if (text) {
+    const t = document.createElement('span');
+    t.className = 'ann-quote-text';
+    t.textContent = text;
+    q.appendChild(t);
+  }
+  return q;
+}
+
 function buildAnnotationCard(ann, isPending) {
   const card = document.createElement('div');
   const failed = !isPending && ann.applyFailed && ann.status !== 'resolved';
@@ -1309,14 +1374,10 @@ function buildAnnotationCard(ann, isPending) {
   head.appendChild(rm);
   card.appendChild(head);
 
-  // Quote
-  const quoteText = ann.text || ann.label || '';
-  if (quoteText) {
-    const q = document.createElement('div');
-    q.className = 'ann-quote';
-    q.textContent = '"' + quoteText + '"';
-    card.appendChild(q);
-  }
+  // Quote — a clean tag chip (element comments) + the quoted text, rather than
+  // dumping the raw "<tag> …" label with doubled quotes.
+  const q = buildQuoteBlock(ann);
+  if (q) card.appendChild(q);
 
   // Body / thread
   const thread = document.createElement('div');
