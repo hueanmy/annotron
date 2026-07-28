@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+// Thin wrapper — forwards all args to src/manual-results.mjs.
+import { fileURLToPath } from 'url';
+import path from 'path';
+import { spawn } from 'child_process';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const tool = path.resolve(here, '..', 'src', 'manual-results.mjs');
+const child = spawn(process.execPath, [tool, ...process.argv.slice(2)], { stdio: 'inherit' });
+child.on('exit', (code, signal) => {
+  if (signal) process.kill(process.pid, signal);
+  else process.exit(code ?? 0);
+});
