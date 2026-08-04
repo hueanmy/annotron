@@ -2,6 +2,27 @@
 
 All notable changes to annotron are documented in this file.
 
+## [1.1.2] - 2026-08-04
+
+### ✨ Added
+
+- **Reply & Resolve in comment popup** — act on comments directly from the in-artifact popup without opening the sidebar. Reply jumps into the thread with the editor open; Resolve/Reopen toggles in place.
+- **Add image while composing** — the Image button and clipboard paste are now available inside the comment composer (not only after posting). Staged images ride along into the pending card and upload on Send.
+- **Keyboard shortcut** — `Cmd+Shift+A` (Mac) / `Ctrl+Shift+A` (Windows/Linux) opens annotron from the editor. Also added an editor-title action and surfaced the command higher in context menus.
+- **Manual test skill** — new `/manual-test` skill with `annotron-mr` CLI for interactive manual test execution, autosave, delta save, and result tracking.
+
+### 🐛 Fixed
+
+- **Dismiss floating UI on scroll** — the inline composer, selection toolbar, and popups now dismiss when the page scrolls (they were pinned to fixed positions and drifted off target). Scrolls inside annotron's own UI are ignored.
+- **Clearer selected-vs-commented state** — the selected annotation mark pops with deep tint, solid outline, glow, and white ring; merely-commented marks stay intentionally faint so the active selection is unmistakable.
+- **Clean quoted comment target** — formatted as a tag chip + clean text instead of raw `<tag> ...` with doubled quotes.
+- **Brand capitalization** — user-facing labels now read "Annotron" consistently (Open in Annotron, custom editor category, web UI title/logo).
+- **Manual test autosave** — delta save (only dirty rows) + 20 MB size limit + warning when test cases are dropped during regeneration.
+
+### 🔧 Changed
+
+- **Version alignment** — npm CLI and VS Code / OpenVSX extension are both **1.1.2**.
+
 ## [1.1.1] - 2026-07-23
 
 ### ✨ Added
